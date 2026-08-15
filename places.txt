@@ -1,0 +1,3 @@
+# Add Google Maps URLs here — one per line, # to comment
+# Example:
+# https://www.google.com/maps/place/Taal+Vista+Hotel/@13.9428,120.9355,15z/...
