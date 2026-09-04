@@ -1,0 +1,28 @@
+[project]
+name = "google-maps-reviews-scraper"
+version = "0.1.0"
+description = "Get all Google Maps reviews for any place — free, no API key, no limits"
+requires-python = ">=3.11"
+dependencies = [
+    "playwright>=1.44",
+    "typer>=0.12",
+    "rich>=13",
+]
+
+[project.optional-dependencies]
+analyze = [
+    "transformers>=4.40",
+    "torch>=2.2",
+    "bertopic>=0.16",
+    "sentence-transformers>=3.0",
+]
+
+[project.scripts]
+gmaps-reviews = "gmaps_reviews.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["gmaps_reviews"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
