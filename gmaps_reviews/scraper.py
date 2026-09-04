@@ -163,6 +163,14 @@ async def _warmup(page: Page) -> dict:
     return warmup
 
 
+def _older_than(reviews: list, since: str) -> bool:
+    """Return True if any review has a date_estimated that is not None and < since."""
+    return any(
+        r.get("date_estimated") is not None and r["date_estimated"] < since
+        for r in reviews
+    )
+
+
 async def scrape(
     maps_url: str,
     place_id: str,
@@ -170,6 +178,11 @@ async def scrape(
     limit: int = 0,     # 0 = all
     sort: str = "relevant",
     progress=None,      # rich Progress or None
+    headless: bool = False,
+    language: str = "en",
+    since: str | None = None,
+    min_rating: int = 0,
+    max_rating: int = 5,
 ) -> int:
     """
     Open Chrome, navigate to maps_url, capture all reviews via batchexecute.
@@ -184,14 +197,16 @@ async def scrape(
 
     total_seen = 0
 
+    locale_str = "en-US" if language == "en" else f"{language}-{language.upper()}"
+
     async with async_playwright() as pw:
         try:
             context: BrowserContext = await pw.chromium.launch_persistent_context(
                 user_data_dir=str(PROFILE_DIR),
                 executable_path=chrome_path,
-                headless=False,
-                args=["--lang=en-US", "--disable-blink-features=AutomationControlled"],
-                locale="en-US",
+                headless=headless,
+                args=[f"--lang={language}", "--disable-blink-features=AutomationControlled"],
+                locale=locale_str,
                 ignore_https_errors=True,
             )
         except Exception as exc:
@@ -249,9 +264,28 @@ async def scrape(
             consecutive_errors = 0
 
             reviews, next_cursor = parse_batch(raw, captured_at)
+
+            # Filter by rating if not both defaults
+            if min_rating != 0 or max_rating != 5:
+                reviews = [
+                    r for r in reviews
+                    if min_rating <= int(r["rating"]) <= max_rating
+                ]
+
+            # Check since cutoff
+            since_break = False
+            if since is not None and _older_than(reviews, since):
+                reviews = [
+                    r for r in reviews
+                    if r.get("date_estimated") is None or r["date_estimated"] >= since
+                ]
+                since_break = True
+
             await on_batch(reviews, next_cursor, raw)
             total_seen += len(reviews)
 
+            if since_break:
+                break
             if next_cursor is None:
                 break
             if limit and total_seen >= limit:

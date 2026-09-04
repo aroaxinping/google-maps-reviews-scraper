@@ -1,0 +1,8 @@
+# Example places file for gmaps-reviews scrape-file
+# One Google Maps URL per line
+# Lines starting with # are ignored
+
+# Hotels
+https://www.google.com/maps/place/Taal+Vista+Hotel/@14.0009,120.9293,17z/data=...
+
+# Add your places below:

@@ -1,6 +1,6 @@
 [project]
 name = "google-maps-reviews-scraper"
-version = "0.1.0"
+version = "0.2.0"
 description = "Get all Google Maps reviews for any place — free, no API key, no limits"
 requires-python = ">=3.11"
 dependencies = [
@@ -16,9 +16,13 @@ analyze = [
     "bertopic>=0.16",
     "sentence-transformers>=3.0",
 ]
+analysis = ["pandas>=2.0", "pyarrow>=14.0", "openpyxl>=3.1", "textblob>=0.18"]
+web = ["fastapi>=0.111", "uvicorn[standard]>=0.29"]
+all = ["pandas>=2.0", "pyarrow>=14.0", "openpyxl>=3.1", "textblob>=0.18", "fastapi>=0.111", "uvicorn[standard]>=0.29"]
 
 [project.scripts]
 gmaps-reviews = "gmaps_reviews.cli:app"
+gmaps-reviews-web = "gmaps_reviews.web_ui:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["gmaps_reviews"]

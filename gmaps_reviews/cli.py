@@ -12,6 +12,7 @@ from urllib.parse import unquote
 import typer
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, MofNCompleteColumn
+from rich.table import Table
 
 from .parser import extract_total_count
 from .scraper import scrape
@@ -25,7 +26,6 @@ DEFAULT_DB = Path("gmaps_reviews.db")
 
 
 def _place_id_from_url(url: str) -> str:
-    """Derive a stable place_id from the Maps URL."""
     m = re.search(r"0x[0-9a-f]+:0x[0-9a-f]+", url, re.I)
     if m:
         return m.group(0).lower()
@@ -48,7 +48,13 @@ def _scrape_one(
     db: Path,
     limit: int,
     sort: str,
+    headless: bool,
+    language: str,
+    since: Optional[str],
+    min_rating: int,
+    max_rating: int,
     csv: Optional[Path],
+    json_out: Optional[Path],
     dashboard: Optional[Path],
     output_dir: Optional[Path],
 ) -> None:
@@ -56,7 +62,6 @@ def _scrape_one(
     place_name = _place_name_from_url(url)
     store = Store(db)
 
-    # Resolve output paths from --output-dir when explicit paths not given
     effective_csv = csv
     effective_dashboard = dashboard
     if output_dir:
@@ -70,8 +75,19 @@ def _scrape_one(
     console.print(f"\n[bold cyan]gmaps-reviews[/bold cyan] — {place_name}")
     console.print(f"  Place ID : [dim]{place_id}[/dim]")
     console.print(f"  Database : [dim]{db}[/dim]")
+    flags = []
     if sort != "relevant":
-        console.print(f"  Sort     : [dim]{sort}[/dim]")
+        flags.append(f"sort={sort}")
+    if headless:
+        flags.append("headless")
+    if language != "en":
+        flags.append(f"lang={language}")
+    if since:
+        flags.append(f"since={since}")
+    if min_rating > 0 or max_rating < 5:
+        flags.append(f"rating={min_rating}-{max_rating}★")
+    if flags:
+        console.print(f"  Options  : [dim]{' · '.join(flags)}[/dim]")
 
     existing = store.known_review_ids(place_id)
     if existing:
@@ -120,7 +136,12 @@ def _scrape_one(
                 description=f"pg {page_num[0]:>4} | +{inserted} new | {total_in_db:,} total",
             )
 
-        asyncio.run(scrape(url, place_id, on_batch, limit=limit, sort=sort))
+        asyncio.run(scrape(
+            url, place_id, on_batch,
+            limit=limit, sort=sort, headless=headless,
+            language=language, since=since,
+            min_rating=min_rating, max_rating=max_rating,
+        ))
 
     total_in_db = store.total_reviews(place_id)
     console.print(
@@ -137,6 +158,11 @@ def _scrape_one(
         n = store.export_csv(effective_csv, place_id)
         console.print(f"  CSV       → {effective_csv} ({n:,} rows)")
 
+    if json_out:
+        json_out.parent.mkdir(parents=True, exist_ok=True)
+        n = store.export_json(json_out, place_id)
+        console.print(f"  JSONL     → {json_out} ({n:,} rows)")
+
     if effective_dashboard:
         effective_dashboard.parent.mkdir(parents=True, exist_ok=True)
         reviews = store.all_reviews(place_id)
@@ -152,21 +178,33 @@ def scrape_cmd(
     db: Annotated[Path, typer.Option("--db", help="SQLite database path")] = DEFAULT_DB,
     limit: Annotated[int, typer.Option("--limit", help="Max reviews (0 = all)")] = 0,
     sort: Annotated[str, typer.Option("--sort", help="relevant | newest | highest | lowest")] = "relevant",
-    csv: Annotated[Optional[Path], typer.Option("--csv", help="Export CSV to this path")] = None,
+    headless: Annotated[bool, typer.Option("--headless/--no-headless", help="Run Chrome without a window")] = False,
+    language: Annotated[str, typer.Option("--language", help="Maps UI language code (e.g. es, fr, de)")] = "en",
+    since: Annotated[Optional[str], typer.Option("--since", help="Stop at reviews older than YYYY-MM")] = None,
+    min_rating: Annotated[int, typer.Option("--min-rating", help="Only keep reviews with rating >= N")] = 0,
+    max_rating: Annotated[int, typer.Option("--max-rating", help="Only keep reviews with rating <= N")] = 5,
+    csv: Annotated[Optional[Path], typer.Option("--csv", help="Export CSV")] = None,
+    json_out: Annotated[Optional[Path], typer.Option("--json", help="Export JSONL")] = None,
     dashboard: Annotated[Optional[Path], typer.Option("--dashboard", help="Generate HTML dashboard")] = None,
     output_dir: Annotated[Optional[Path], typer.Option("--output-dir", help="Auto-create <dir>/<place>/reviews.csv and dashboard.html")] = None,
 ):
     """Scrape all reviews from a Google Maps place URL."""
-    _scrape_one(url, db, limit, sort, csv, dashboard, output_dir)
+    _scrape_one(url, db, limit, sort, headless, language, since, min_rating, max_rating,
+                csv, json_out, dashboard, output_dir)
 
 
 @app.command("scrape-file")
 def scrape_file_cmd(
     urls_file: Annotated[Path, typer.Argument(help="Text file with one Google Maps URL per line")],
-    db: Annotated[Path, typer.Option("--db", help="SQLite database path")] = DEFAULT_DB,
+    db: Annotated[Path, typer.Option("--db")] = DEFAULT_DB,
     limit: Annotated[int, typer.Option("--limit", help="Max reviews per place (0 = all)")] = 0,
-    sort: Annotated[str, typer.Option("--sort", help="relevant | newest | highest | lowest")] = "relevant",
-    output_dir: Annotated[Optional[Path], typer.Option("--output-dir", help="Auto-create <dir>/<place>/reviews.csv and dashboard.html")] = None,
+    sort: Annotated[str, typer.Option("--sort")] = "relevant",
+    headless: Annotated[bool, typer.Option("--headless/--no-headless")] = False,
+    language: Annotated[str, typer.Option("--language")] = "en",
+    since: Annotated[Optional[str], typer.Option("--since")] = None,
+    min_rating: Annotated[int, typer.Option("--min-rating")] = 0,
+    max_rating: Annotated[int, typer.Option("--max-rating")] = 5,
+    output_dir: Annotated[Optional[Path], typer.Option("--output-dir")] = None,
 ):
     """Scrape multiple places from a file — one Google Maps URL per line."""
     if not urls_file.exists():
@@ -187,7 +225,8 @@ def scrape_file_cmd(
     for i, url in enumerate(urls, 1):
         place_name = _place_name_from_url(url)
         console.rule(f"[bold]{i}/{len(urls)}[/bold] · {place_name}")
-        _scrape_one(url, db, limit, sort, None, None, output_dir)
+        _scrape_one(url, db, limit, sort, headless, language, since, min_rating, max_rating,
+                    None, None, None, output_dir)
 
     console.print(f"\n[green bold]All done.[/green bold] Scraped {len(urls)} places → {db}")
 
@@ -197,8 +236,11 @@ def export(
     db: Annotated[Path, typer.Option("--db")] = DEFAULT_DB,
     place_id: Annotated[Optional[str], typer.Option("--place")] = None,
     csv: Annotated[Optional[Path], typer.Option("--csv")] = None,
+    json_out: Annotated[Optional[Path], typer.Option("--json", help="Export JSONL")] = None,
+    parquet: Annotated[Optional[Path], typer.Option("--parquet", help="Export Parquet (requires pandas+pyarrow)")] = None,
+    excel: Annotated[Optional[Path], typer.Option("--excel", help="Export Excel (requires pandas+openpyxl)")] = None,
     dashboard: Annotated[Optional[Path], typer.Option("--dashboard")] = None,
-    output_dir: Annotated[Optional[Path], typer.Option("--output-dir", help="Auto-create <dir>/<place>/reviews.csv and dashboard.html")] = None,
+    output_dir: Annotated[Optional[Path], typer.Option("--output-dir")] = None,
 ):
     """Export existing data from the database without scraping."""
     store = Store(db)
@@ -218,7 +260,28 @@ def export(
     if effective_csv:
         effective_csv.parent.mkdir(parents=True, exist_ok=True)
         n = store.export_csv(effective_csv, place_id)
-        console.print(f"CSV → {effective_csv} ({n:,} rows)")
+        console.print(f"CSV     → {effective_csv} ({n:,} rows)")
+
+    if json_out:
+        json_out.parent.mkdir(parents=True, exist_ok=True)
+        n = store.export_json(json_out, place_id)
+        console.print(f"JSONL   → {json_out} ({n:,} rows)")
+
+    if parquet:
+        parquet.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            n = store.export_parquet(parquet, place_id)
+            console.print(f"Parquet → {parquet} ({n:,} rows)")
+        except ImportError as e:
+            console.print(f"[yellow]{e}[/yellow]")
+
+    if excel:
+        excel.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            n = store.export_excel(excel, place_id)
+            console.print(f"Excel   → {excel} ({n:,} rows)")
+        except ImportError as e:
+            console.print(f"[yellow]{e}[/yellow]")
 
     if effective_dashboard:
         effective_dashboard.parent.mkdir(parents=True, exist_ok=True)
@@ -227,6 +290,66 @@ def export(
         console.print(f"Dashboard → {effective_dashboard}")
 
     store.close()
+
+
+@app.command()
+def stats(
+    db: Annotated[Path, typer.Option("--db")] = DEFAULT_DB,
+    place_id: Annotated[Optional[str], typer.Option("--place")] = None,
+):
+    """Show a summary of scraped reviews in the database."""
+    store = Store(db)
+    s = store.get_stats(place_id)
+    store.close()
+
+    console.print(f"\n[bold cyan]Stats[/bold cyan] — {db}" + (f" · {place_id}" if place_id else ""))
+    console.print()
+
+    # Summary cards
+    table = Table(show_header=False, box=None, padding=(0, 2))
+    table.add_column(style="dim")
+    table.add_column(style="bold cyan")
+    table.add_row("Total reviews",  f"{s['total']:,}")
+    table.add_row("Average rating", f"{s['avg_rating']:.2f} ★")
+    table.add_row("With text",      f"{s['with_text']:,}")
+    table.add_row("Owner replies",  f"{s['with_reply']:,}")
+    table.add_row("Local Guides",   f"{s['local_guides']:,}")
+    if s["date_range"][0]:
+        table.add_row("Date range", f"{s['date_range'][0]} → {s['date_range'][1]}")
+    console.print(table)
+
+    # Rating distribution
+    console.print("\n[dim]Rating distribution[/dim]")
+    for star in ["5", "4", "3", "2", "1"]:
+        count = s["rating_dist"].get(star, 0)
+        pct = count / s["total"] * 100 if s["total"] else 0
+        bar = "█" * int(pct / 2)
+        console.print(f"  {star}★  {bar:<50} {count:,} ({pct:.1f}%)")
+
+    # Top words
+    if s["top_words"]:
+        console.print("\n[dim]Top words[/dim]")
+        words = "  ".join(f"[cyan]{w}[/cyan] {c}" for w, c in s["top_words"][:15])
+        console.print(f"  {words}")
+
+    console.print()
+
+
+@app.command()
+def web(
+    host: Annotated[str, typer.Option("--host")] = "127.0.0.1",
+    port: Annotated[int, typer.Option("--port")] = 8000,
+):
+    """Launch the web UI in your browser."""
+    try:
+        import uvicorn
+        from .web_ui import app as web_app
+    except ImportError:
+        console.print("[red]Web UI requires FastAPI and uvicorn:[/red]")
+        console.print("  pip install 'google-maps-reviews-scraper[web]'")
+        raise typer.Exit(1)
+    console.print(f"[bold cyan]Web UI[/bold cyan] → http://{host}:{port}")
+    uvicorn.run(web_app, host=host, port=port)
 
 
 if __name__ == "__main__":
