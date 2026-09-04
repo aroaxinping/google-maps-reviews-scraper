@@ -2,7 +2,7 @@
 
 **Get all Google Maps reviews for any place — free, no API key, no limits.**
 
-The Google Places API charges ~$17 per 1,000 reviews. This gets them all for $0.
+The Google Places API charges ~$17 per 1,000 reviews and caps at 5 per place. This gets them all for $0.
 
 > Scraped 4,370 reviews from a single hotel in under 10 minutes.
 
@@ -32,6 +32,8 @@ Most scrapers break after ~900 reviews because they rely on scrolling, which hit
 | Breaks on UI changes | ✅ No (API) | ❌ Yes (DOM) | ✅ No |
 | Local Guide info | ✅ Yes | ❌ No | ❌ No |
 | Estimated dates | ✅ Yes | ❌ No | ❌ No |
+| Sort order control | ✅ Yes | ❌ No | ❌ No |
+| Multi-place from file | ✅ Yes | ❌ No | ❌ No |
 | HTML dashboard | ✅ Yes | ❌ No | ❌ No |
 
 ---
@@ -39,7 +41,7 @@ Most scrapers break after ~900 reviews because they rely on scrolling, which hit
 ## Requirements
 
 - Python ≥ 3.11
-- Google Chrome installed
+- Google Chrome installed (Linux, macOS, or Windows)
 - A Google account logged in on Chrome (for session auth)
 
 ## Install
@@ -52,16 +54,83 @@ playwright install chromium
 
 ## Usage
 
+### Scrape a single place
+
 ```bash
 # Scrape all reviews — saves to SQLite
 gmaps-reviews scrape "https://www.google.com/maps/place/..."
 
-# Scrape + export CSV + generate dashboard
+# Scrape newest reviews first
+gmaps-reviews scrape "https://..." --sort newest
+
+# Scrape + export CSV + dashboard in one shot
 gmaps-reviews scrape "https://..." --csv reviews.csv --dashboard dashboard.html
 
-# Export from existing DB without scraping again
-gmaps-reviews export --csv out.csv --dashboard out.html
+# Auto-organize output into a directory
+gmaps-reviews scrape "https://..." --output-dir ./data
+# → ./data/taal-vista-hotel/reviews.csv
+# → ./data/taal-vista-hotel/dashboard.html
+
+# Limit to first 500 reviews
+gmaps-reviews scrape "https://..." --limit 500
+
+# Use a different database
+gmaps-reviews scrape "https://..." --db hotels.db
 ```
+
+### Scrape multiple places from a file
+
+```bash
+# places.txt — one URL per line, # to comment
+gmaps-reviews scrape-file places.txt
+
+# With output directory (one subfolder per place)
+gmaps-reviews scrape-file places.txt --output-dir ./data --db all_places.db
+```
+
+`places.txt` format:
+```
+# Philippines hotels
+https://www.google.com/maps/place/Taal+Vista+Hotel/...
+https://www.google.com/maps/place/Shangri-La+Boracay/...
+
+# Madrid restaurants
+https://www.google.com/maps/place/DiverXO/...
+```
+
+### Export from existing database
+
+```bash
+# Export CSV + dashboard without scraping again
+gmaps-reviews export --db hotels.db --csv all.csv --dashboard all.html
+
+# Filter to one place
+gmaps-reviews export --db hotels.db --place 0x....:0x.... --csv taal.csv
+```
+
+### Sort options
+
+| `--sort` value | Description |
+|---|---|
+| `relevant` (default) | Google's default ranking |
+| `newest` | Most recent reviews first |
+| `highest` | Highest rated first |
+| `lowest` | Lowest rated (most critical) first |
+
+### Chrome path
+
+If Chrome is not auto-detected, set the path via environment variable:
+
+```bash
+CHROME_PATH="/usr/bin/google-chrome-stable" gmaps-reviews scrape "https://..."
+```
+
+Auto-detected locations by platform:
+- **Linux**: `/usr/bin/google-chrome-stable`, `/usr/bin/google-chrome`, `/usr/bin/chromium-browser`
+- **macOS**: `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`
+- **Windows**: `C:\Program Files\Google\Chrome\Application\chrome.exe`
+
+---
 
 ## Output fields
 
@@ -82,9 +151,11 @@ gmaps-reviews export --csv out.csv --dashboard out.html
 
 1. Opens your real Chrome profile — inherits your Google session
 2. Navigates to the Maps URL and clicks the Reviews tab
-3. Scrolls once to trigger the first `batchexecute` request — captures the URL, headers, and session token (`x-maps-bgkey`)
-4. Loops via in-page XHR with cursor substitution — no scrolling, no DOM parsing, no limits
-5. Stores raw batches + parsed reviews in SQLite; exports CSV and HTML dashboard on demand
+3. Optionally clicks the sort button to set the desired order
+4. Scrolls once to trigger the first `batchexecute` request — captures the URL, headers, and session token (`x-maps-bgkey`)
+5. Loops via in-page XHR with cursor substitution — no scrolling, no DOM parsing, no limits
+6. Stores raw batches + parsed reviews in SQLite; resumes automatically if interrupted
+7. Exports CSV and HTML dashboard on demand
 
 ## License
 
