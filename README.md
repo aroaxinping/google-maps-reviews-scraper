@@ -68,7 +68,6 @@ gmaps-reviews export --csv out.csv --dashboard out.html
 | `date_relative` | "a year ago", "3 months ago"… |
 | `date_estimated` | YYYY-MM estimated from relative date |
 | `has_photos` | True / False |
-| `likes` | Helpful votes |
 | `review_text` | Full review text (original language) |
 | `owner_reply` | Owner response, if any |
 

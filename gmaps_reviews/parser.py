@@ -38,11 +38,22 @@ def _owner_reply(d: Any) -> str:
 
 
 def _reviewer_level(d: Any) -> tuple[bool, int | None]:
-    """Returns (is_local_guide, review_count)."""
-    info_str = _safe(d, 1, 4, 5, 10, 0) or ""
-    is_guide = "Local Guide" in info_str or "Guía Local" in info_str
-    m = re.search(r"(\d[\d,]*)\s+review", info_str, re.I)
-    count = int(m.group(1).replace(",", "")) if m else None
+    """Returns (is_local_guide, review_count).
+    d[1][4][5][8][0] is a bool flag for Local Guide.
+    d[1][4][5][5] is the reviewer's total review count (int).
+    Falls back to parsing the info string when direct fields are absent.
+    """
+    is_guide = _safe(d, 1, 4, 5, 8, 0) is True
+    if not is_guide:
+        info_str = _safe(d, 1, 4, 5, 10, 0) or ""
+        is_guide = "Local Guide" in info_str or "Guía Local" in info_str
+
+    count = _safe(d, 1, 4, 5, 5)
+    if not isinstance(count, int):
+        info_str = _safe(d, 1, 4, 5, 10, 0) or ""
+        m = re.search(r"(\d[\d,]*)\s+review", info_str, re.I)
+        count = int(m.group(1).replace(",", "")) if m else None
+
     return is_guide, count
 
 
@@ -108,7 +119,6 @@ def parse_batch(
                 "date_relative": date_rel,
                 "date_estimated": _estimate_date(date_rel, now),
                 "has_photos":   bool(_safe(d, 2, 2)),
-                "likes":        _safe(d, 3, 1) or 0,
                 "review_text":  _review_text(d),
                 "owner_reply":  _owner_reply(d),
                 "source":       "Google Maps",

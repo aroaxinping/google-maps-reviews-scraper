@@ -38,7 +38,7 @@ def _place_name_from_url(url: str) -> str:
     return "Unknown Place"
 
 
-@app.command()
+@app.command("scrape")
 def scrape_cmd(
     url: Annotated[str, typer.Argument(help="Google Maps place URL")],
     db: Annotated[Path, typer.Option("--db", help="SQLite database path")] = DEFAULT_DB,

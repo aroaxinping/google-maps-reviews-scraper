@@ -30,7 +30,6 @@ CREATE TABLE IF NOT EXISTS reviews (
     date_relative TEXT,
     date_estimated TEXT,
     has_photos    INTEGER,
-    likes         INTEGER,
     review_text   TEXT,
     owner_reply   TEXT,
     source        TEXT
@@ -46,7 +45,7 @@ CREATE TABLE IF NOT EXISTS raw_batches (
 
 CSV_FIELDS = [
     "review_id", "place_id", "author", "local_guide", "review_count",
-    "rating", "date_relative", "date_estimated", "has_photos", "likes",
+    "rating", "date_relative", "date_estimated", "has_photos",
     "review_text", "owner_reply", "source",
 ]
 
@@ -79,12 +78,12 @@ class Store:
             try:
                 self.con.execute(
                     """INSERT OR IGNORE INTO reviews VALUES
-                       (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                       (?,?,?,?,?,?,?,?,?,?,?,?)""",
                     (
                         r["review_id"], place_id, r["author"],
                         int(r["local_guide"]), r["review_count"],
                         r["rating"], r["date_relative"], r["date_estimated"],
-                        int(r["has_photos"]), r["likes"],
+                        int(r["has_photos"]),
                         r["review_text"], r["owner_reply"], r["source"],
                     ),
                 )
