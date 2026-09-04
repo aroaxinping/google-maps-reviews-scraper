@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import json
+import re
 from collections import Counter
 from pathlib import Path
 
@@ -20,7 +21,6 @@ def _monthly_counts(reviews: list[dict]) -> dict:
 
 
 def _top_words(reviews: list[dict], n: int = 40) -> list[tuple[str, int]]:
-    import re
     stopwords = {
         "the", "a", "an", "and", "or", "but", "in", "on", "at", "to",
         "for", "of", "with", "is", "it", "was", "are", "be", "we", "i",

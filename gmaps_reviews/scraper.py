@@ -15,7 +15,7 @@ from urllib.parse import parse_qs, urlencode
 
 from playwright.async_api import BrowserContext, Page, async_playwright
 
-from .parser import extract_total_count, parse_batch
+from .parser import parse_batch
 
 CHROME_PATH = "/usr/bin/google-chrome-stable"
 PROFILE_DIR = Path.home() / ".playwright-google-profile"

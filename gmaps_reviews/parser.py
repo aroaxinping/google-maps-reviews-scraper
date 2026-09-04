@@ -99,8 +99,6 @@ def parse_batch(
         inner = json.loads(inner_str)
         next_cursor = inner[1] if len(inner) > 1 else None
         reviews_arr = inner[2] if len(inner) > 2 else []
-        # total count is buried at inner[3][1] on the first page
-        # (caller can extract separately if needed)
     except Exception:
         return [], None
 

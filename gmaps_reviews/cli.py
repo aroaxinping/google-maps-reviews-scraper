@@ -12,7 +12,7 @@ import typer
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, MofNCompleteColumn
 
-from .parser import extract_total_count, parse_batch
+from .parser import extract_total_count
 from .scraper import scrape
 from .storage import Store
 from .dashboard import generate
@@ -53,8 +53,7 @@ def scrape_cmd(
 
     console.print(f"\n[bold cyan]gmaps-reviews[/bold cyan] — {place_name}")
     console.print(f"  Place ID : [dim]{place_id}[/dim]")
-    console.print(f"  Database : [dim]{db}[/dim]")
-    console.print(f"  Sort     : [dim]{sort}[/dim]\n")
+    console.print(f"  Database : [dim]{db}[/dim]\n")
 
     existing = store.known_review_ids(place_id)
     console.print(f"  Existing : [dim]{len(existing)} reviews already in DB[/dim]\n")
