@@ -115,7 +115,6 @@ async def scrape(
     place_id: str,
     on_batch,           # async callback(reviews, next_cursor, raw) -> None
     limit: int = 0,     # 0 = all
-    sort: str = "relevant",
     progress=None,      # rich Progress or None
 ) -> int:
     """
@@ -148,8 +147,6 @@ async def scrape(
             await page.wait_for_timeout(3000)
 
         await _open_reviews_tab(page)
-
-        # TODO: apply sort order by clicking the sort button before warmup
 
         warmup = await _warmup(page)
         real_url = warmup["url"]

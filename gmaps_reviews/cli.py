@@ -43,7 +43,6 @@ def scrape_cmd(
     url: Annotated[str, typer.Argument(help="Google Maps place URL")],
     db: Annotated[Path, typer.Option("--db", help="SQLite database path")] = DEFAULT_DB,
     limit: Annotated[int, typer.Option("--limit", help="Max reviews (0 = all)")] = 0,
-    sort: Annotated[str, typer.Option("--sort", help="relevant | newest | highest | lowest")] = "relevant",
     csv: Annotated[Optional[Path], typer.Option("--csv", help="Also export CSV")] = None,
     dashboard: Annotated[Optional[Path], typer.Option("--dashboard", help="Generate HTML dashboard")] = None,
 ):
@@ -99,7 +98,7 @@ def scrape_cmd(
                 description=f"pg {page_num[0]:>4} | +{inserted} new | {total_in_db:,} total",
             )
 
-        asyncio.run(scrape(url, place_id, on_batch, limit=limit, sort=sort))
+        asyncio.run(scrape(url, place_id, on_batch, limit=limit))
 
     total_in_db = store.total_reviews(place_id)
     console.print(f"\n[green]Done.[/green] {new_total:,} new reviews added. {total_in_db:,} total in DB.")

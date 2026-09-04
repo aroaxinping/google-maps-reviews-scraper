@@ -59,9 +59,6 @@ gmaps-reviews scrape "https://www.google.com/maps/place/..."
 # Scrape + export CSV + generate dashboard
 gmaps-reviews scrape "https://..." --csv reviews.csv --dashboard dashboard.html
 
-# Only the 500 most recent
-gmaps-reviews scrape "https://..." --limit 500 --sort newest
-
 # Export from existing DB without scraping again
 gmaps-reviews export --csv out.csv --dashboard out.html
 ```
