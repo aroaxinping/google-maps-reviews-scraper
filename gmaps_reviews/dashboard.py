@@ -7,6 +7,13 @@ from collections import Counter
 from pathlib import Path
 
 
+def _extract_words(text: str) -> list:
+    latin = [w.lower() for w in re.findall(r"[a-zA-ZÀ-ÿ]{4,}", text)]
+    cjk   = re.findall(r"[一-鿿㐀-䶿가-힯぀-ゟ゠-ヿ]{2,}", text)
+    arabic = re.findall(r"[؀-ۿ]{4,}", text)
+    return latin + cjk + arabic
+
+
 def _rating_distribution(reviews: list[dict]) -> dict:
     counts = Counter(int(r["rating"]) for r in reviews if r["rating"])
     return {str(i): counts.get(i, 0) for i in range(1, 6)}
@@ -32,11 +39,25 @@ def _top_words(reviews: list[dict], n: int = 40) -> list[tuple[str, int]]:
     words: Counter = Counter()
     for r in reviews:
         if r.get("review_text"):
-            for w in re.findall(r"[a-záéíóúñüA-Z]{4,}", r["review_text"]):
-                w = w.lower()
-                if w not in stopwords:
-                    words[w] += 1
+            for w in _extract_words(r["review_text"]):
+                if w.isascii() and w in stopwords:
+                    continue
+                words[w] += 1
     return words.most_common(n)
+
+
+def _reply_rate_by_month(reviews: list) -> dict:
+    from collections import defaultdict
+    total: dict = defaultdict(int)
+    replied: dict = defaultdict(int)
+    for r in reviews:
+        month = r.get("date_estimated")
+        if not month:
+            continue
+        total[month] += 1
+        if r.get("owner_reply"):
+            replied[month] += 1
+    return {m: round(replied[m] / total[m], 3) for m in sorted(total) if total[m] >= 3}
 
 
 def generate(reviews: list[dict], output_path: Path, place_name: str = "Place") -> None:
@@ -64,6 +85,7 @@ def generate(reviews: list[dict], output_path: Path, place_name: str = "Place") 
         "monthly": monthly,
         "top_words": top_words,
     }
+    data["reply_rate"] = _reply_rate_by_month(reviews)
 
     html = _render(data)
     output_path.write_text(html, encoding="utf-8")
@@ -108,6 +130,7 @@ def _render(d: dict) -> str:
   <div class="chart-box"><h2>Rating distribution</h2><div id="ch-ratings"></div></div>
   <div class="chart-box"><h2>Reviews over time (estimated)</h2><div id="ch-timeline"></div></div>
   <div class="chart-box"><h2>Top words in reviews</h2><div id="ch-words"></div></div>
+  <div class="chart-box"><h2>Owner Reply Rate Over Time</h2><div id="ch-reply"></div></div>
 </div>
 <script>
 const DATA = {data_json};
@@ -147,6 +170,20 @@ Plotly.newPlot('ch-words', [{{
   marker:{{color:'#818cf8'}}
 }}], {{...dark, xaxis:{{fixedrange:true}}, yaxis:{{fixedrange:true, automargin:true}},
   height: 480}}, {{displayModeBar:false}});
+if (Object.keys(DATA.reply_rate || {{}}).length >= 2) {{
+  const months = Object.keys(DATA.reply_rate).sort();
+  Plotly.newPlot('ch-reply', [{{
+    type: 'scatter', mode: 'lines+markers',
+    x: months, y: months.map(m => Math.round(DATA.reply_rate[m]*100)),
+    line: {{color: '#22c55e', width: 2}},
+    marker: {{color: '#22c55e', size: 5}},
+    hovertemplate: '%{{x}}: %{{y}}%<extra></extra>',
+  }}], {{
+    ...dark,
+    yaxis: {{fixedrange: true, ticksuffix: '%', range: [0, 100]}},
+    xaxis: {{fixedrange: true}},
+  }}, {{displayModeBar: false}});
+}}
 </script>
 </body>
 </html>"""

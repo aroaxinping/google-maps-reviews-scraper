@@ -9,6 +9,13 @@ from collections import Counter
 from pathlib import Path
 from typing import Iterable
 
+def _extract_words(text: str) -> list:
+    latin = [w.lower() for w in re.findall(r"[a-zA-ZÀ-ÿ]{4,}", text)]
+    cjk   = re.findall(r"[一-鿿㐀-䶿가-힯぀-ゟ゠-ヿ]{2,}", text)
+    arabic = re.findall(r"[؀-ۿ]{4,}", text)
+    return latin + cjk + arabic
+
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS places (
     place_id    TEXT PRIMARY KEY,
@@ -192,11 +199,24 @@ class Store:
         word_counts: Counter = Counter()
         for r in rows:
             if r.get("review_text"):
-                for w in re.findall(r"[a-záéíóúñüA-Z]{4,}", r["review_text"]):
-                    w = w.lower()
-                    if w not in stopwords:
-                        word_counts[w] += 1
+                for w in _extract_words(r["review_text"]):
+                    if w.isascii() and w in stopwords:
+                        continue
+                    word_counts[w] += 1
         top_words = word_counts.most_common(20)
+
+        lang_counts: dict = {}
+        try:
+            from langdetect import detect
+            for r in rows:
+                if r.get("review_text"):
+                    try:
+                        lang = detect(r["review_text"])
+                        lang_counts[lang] = lang_counts.get(lang, 0) + 1
+                    except Exception:
+                        pass
+        except ImportError:
+            pass
 
         return {
             "total": total,
@@ -207,6 +227,7 @@ class Store:
             "rating_dist": rating_dist,
             "top_words": top_words,
             "date_range": date_range,
+            "languages": lang_counts,
         }
 
     def close(self) -> None:
