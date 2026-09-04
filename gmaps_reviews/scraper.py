@@ -8,7 +8,9 @@ No external APIs. No proxies. Uses the real Chrome session.
 from __future__ import annotations
 import asyncio
 import json
+import os
 import re
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import parse_qs, urlencode
@@ -17,8 +19,35 @@ from playwright.async_api import BrowserContext, Page, async_playwright
 
 from .parser import parse_batch
 
-CHROME_PATH = "/usr/bin/google-chrome-stable"
 PROFILE_DIR = Path.home() / ".playwright-google-profile"
+
+_CHROME_CANDIDATES = {
+    "linux": [
+        "/usr/bin/google-chrome-stable",
+        "/usr/bin/google-chrome",
+        "/usr/bin/chromium-browser",
+        "/usr/bin/chromium",
+    ],
+    "darwin": [
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    ],
+    "win32": [
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+    ],
+}
+
+
+def _find_chrome() -> str | None:
+    override = os.environ.get("CHROME_PATH")
+    if override:
+        return override
+    platform = sys.platform
+    for candidate in _CHROME_CANDIDATES.get(platform, _CHROME_CANDIDATES["linux"]):
+        if Path(candidate).exists():
+            return candidate
+    return None
+
 
 SKIP_HEADERS = {
     "host", "content-length", "connection", "accept-encoding",
@@ -80,6 +109,30 @@ async def _open_reviews_tab(page: Page) -> None:
         pass
 
 
+async def _apply_sort(page: Page, sort: str) -> None:
+    if sort == "relevant":
+        return
+    _SORT_LABELS = {
+        "newest":  re.compile(r"Newest|Más reciente", re.I),
+        "highest": re.compile(r"Highest|Más valorad", re.I),
+        "lowest":  re.compile(r"Lowest|Más baja", re.I),
+    }
+    label = _SORT_LABELS.get(sort)
+    if not label:
+        return
+    try:
+        btn = page.get_by_role("button", name=re.compile(r"Sort|Ordenar", re.I))
+        await btn.wait_for(timeout=8000)
+        await btn.click()
+        await page.wait_for_timeout(800)
+        item = page.get_by_role("menuitem", name=label)
+        await item.wait_for(timeout=5000)
+        await item.click()
+        await page.wait_for_timeout(2000)
+    except Exception:
+        pass  # sort button not found; continue with default order
+
+
 async def _warmup(page: Page) -> dict:
     """Scroll once to trigger the first real batchexecute and capture its metadata."""
     warmup: dict = {"url": None, "post_data": None, "headers": None, "done": asyncio.Event()}
@@ -115,23 +168,41 @@ async def scrape(
     place_id: str,
     on_batch,           # async callback(reviews, next_cursor, raw) -> None
     limit: int = 0,     # 0 = all
+    sort: str = "relevant",
     progress=None,      # rich Progress or None
 ) -> int:
     """
     Open Chrome, navigate to maps_url, capture all reviews via batchexecute.
     Calls on_batch for each page. Returns total reviews seen.
     """
+    chrome_path = _find_chrome()
+    if not chrome_path:
+        raise RuntimeError(
+            "Chrome not found. Install Google Chrome or set the CHROME_PATH "
+            "environment variable to the path of your Chrome executable."
+        )
+
     total_seen = 0
 
     async with async_playwright() as pw:
-        context: BrowserContext = await pw.chromium.launch_persistent_context(
-            user_data_dir=str(PROFILE_DIR),
-            executable_path=CHROME_PATH,
-            headless=False,
-            args=["--lang=en-US", "--disable-blink-features=AutomationControlled"],
-            locale="en-US",
-            ignore_https_errors=True,
-        )
+        try:
+            context: BrowserContext = await pw.chromium.launch_persistent_context(
+                user_data_dir=str(PROFILE_DIR),
+                executable_path=chrome_path,
+                headless=False,
+                args=["--lang=en-US", "--disable-blink-features=AutomationControlled"],
+                locale="en-US",
+                ignore_https_errors=True,
+            )
+        except Exception as exc:
+            msg = str(exc).lower()
+            if "executable" in msg or "chrome" in msg or "not found" in msg:
+                raise RuntimeError(
+                    f"Chrome could not be launched at '{chrome_path}'. "
+                    "Install Google Chrome or set CHROME_PATH to the correct path."
+                ) from exc
+            raise
+
         page: Page = context.pages[0] if context.pages else await context.new_page()
 
         await page.goto(maps_url, wait_until="domcontentloaded", timeout=60000)
@@ -147,6 +218,7 @@ async def scrape(
             await page.wait_for_timeout(3000)
 
         await _open_reviews_tab(page)
+        await _apply_sort(page, sort)
 
         warmup = await _warmup(page)
         real_url = warmup["url"]

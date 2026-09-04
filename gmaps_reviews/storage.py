@@ -61,6 +61,7 @@ class Store:
         self.con.execute(
             """INSERT INTO places VALUES (?,?,?,?,?,?,?,?,?)
                ON CONFLICT(place_id) DO UPDATE SET
+               name=excluded.name,
                total_reviews=excluded.total_reviews,
                scraped_at=excluded.scraped_at""",
             (
