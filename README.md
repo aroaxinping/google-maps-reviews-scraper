@@ -10,6 +10,16 @@ The Google Places API charges ~$17 per 1,000 reviews. This gets them all for $0.
 
 ---
 
+## Why this exists
+
+If you want Google Maps reviews at scale, your options are:
+
+- **Google Places API** — capped at 5 reviews per place, costs money beyond the free tier
+- **Third-party APIs** (SerpApi, Outscraper, etc.) — pay per request, no control over your data
+- **Existing scrapers** — most scroll the DOM and silently break after ~900 reviews because the scroll container hits a physical maximum height
+
+This tool takes a different approach: it intercepts the same internal API that Google Maps itself uses, then paginates through all pages with cursor-based requests. No scroll limit. No DOM parsing. No vendor lock-in. Works as long as you have a Google account.
+
 ## How it's different
 
 Most scrapers break after ~900 reviews because they rely on scrolling, which hits a physical DOM limit. This one intercepts the real `batchexecute` API that Google Maps uses internally and paginates via cursor — the same way the app does it. No scroll limit. No review cap.
