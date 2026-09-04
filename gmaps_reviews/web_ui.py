@@ -50,7 +50,7 @@ def _slugify(name: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# HTML template (single page, dark theme)
+# HTML template — Google Material Design aesthetic
 # ---------------------------------------------------------------------------
 
 HTML_TEMPLATE = r"""<!DOCTYPE html>
@@ -58,258 +58,330 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Google Maps Reviews Scraper</title>
+<title>Maps Reviews Scraper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --bg: #0f1117;
-    --surface: #1a1d27;
-    --border: #2d3348;
-    --text: #e2e8f0;
-    --muted: #94a3b8;
-    --accent: #3b82f6;
-    --accent-hover: #2563eb;
-    --success: #22c55e;
-    --error: #ef4444;
-    --input-bg: #111827;
+    --bg:        #f1f3f4;
+    --surface:   #ffffff;
+    --surface2:  #f8f9fa;
+    --border:    #dadce0;
+    --text:      #202124;
+    --muted:     #5f6368;
+    --blue:      #1a73e8;
+    --blue-bg:   #e8f0fe;
+    --blue-dark: #1557b0;
+    --green:     #34a853;
+    --red:       #ea4335;
+    --shadow-1:  0 1px 2px rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15);
+    /* legacy aliases used in JS-driven classes */
+    --accent: #1a73e8;
+    --success: #34a853;
+    --error: #ea4335;
+    --input-bg: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:      #131314;
+      --surface: #1e1f20;
+      --surface2:#292a2d;
+      --border:  #3c4043;
+      --text:    #e8eaed;
+      --muted:   #9aa0a6;
+      --blue:    #8ab4f8;
+      --blue-bg: #1a2744;
+      --blue-dark:#aecbfa;
+      --green:   #81c995;
+      --red:     #f28b82;
+      --shadow-1:0 1px 2px rgba(0,0,0,.6),0 1px 3px 1px rgba(0,0,0,.4);
+      --accent: #8ab4f8;
+      --success: #81c995;
+      --error: #f28b82;
+      --input-bg: #1e1f20;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:      #131314;
+    --surface: #1e1f20;
+    --surface2:#292a2d;
+    --border:  #3c4043;
+    --text:    #e8eaed;
+    --muted:   #9aa0a6;
+    --blue:    #8ab4f8;
+    --blue-bg: #1a2744;
+    --blue-dark:#aecbfa;
+    --green:   #81c995;
+    --red:     #f28b82;
+    --shadow-1:0 1px 2px rgba(0,0,0,.6),0 1px 3px 1px rgba(0,0,0,.4);
+    --accent: #8ab4f8;
+    --success: #81c995;
+    --error: #f28b82;
+    --input-bg: #1e1f20;
   }
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    font-size: 15px;
-    line-height: 1.6;
+    font-family: Roboto, 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
     min-height: 100vh;
-    padding: 2rem 1rem;
+  }
+  .g-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    height: 56px;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 14px;
+    box-shadow: 0 1px 3px rgba(60,64,67,.15);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .g-header-logo { display:flex; align-items:center; gap:10px; }
+  .g-header-logo svg { flex-shrink:0; }
+  .g-header-title { font-size:18px; font-weight:400; color:var(--text); letter-spacing:-.01em; }
+  .g-header-title b { color:var(--blue); font-weight:500; }
+  .g-chip {
+    background:var(--blue-bg); color:var(--blue);
+    font-size:11px; font-weight:500; padding:2px 8px; border-radius:12px; letter-spacing:.02em;
   }
   .container {
-    max-width: 860px;
+    max-width: 640px;
     margin: 0 auto;
+    padding: 28px 16px 64px;
   }
-  h1 {
-    font-size: 1.6rem;
-    font-weight: 700;
-    margin-bottom: 0.25rem;
-    color: var(--text);
-  }
-  .subtitle {
-    color: var(--muted);
-    margin-bottom: 2rem;
-    font-size: 0.9rem;
-  }
+  /* Cards */
   .card {
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
+    border-radius: 8px;
+    box-shadow: var(--shadow-1);
+    margin-bottom: 16px;
+    overflow: hidden;
   }
-  .card h2 {
-    font-size: 1rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-  }
-  .form-grid .full {
-    grid-column: 1 / -1;
-  }
+  .card-hd { padding: 20px 24px 0; }
+  .card-title { font-size: 16px; font-weight: 500; margin-bottom: 4px; }
+  .card-sub { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+  .card-bd { padding: 0 24px 24px; }
+  /* Form */
+  .field { margin-bottom: 14px; }
   .field label {
-    display: block;
-    font-size: 0.82rem;
-    font-weight: 500;
-    color: var(--muted);
-    margin-bottom: 0.35rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    display: block; font-size: 11px; font-weight: 500; color: var(--muted);
+    margin-bottom: 5px; text-transform: uppercase; letter-spacing: .08em;
   }
-  .field input[type="text"],
-  .field input[type="number"],
-  .field select {
-    width: 100%;
-    background: var(--input-bg);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    padding: 0.55rem 0.75rem;
-    font-size: 0.95rem;
-    outline: none;
-    transition: border-color 0.15s;
+  input[type="text"], input[type="number"], select {
+    width: 100%; height: 40px; padding: 0 12px;
+    background: var(--input-bg); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text);
+    font-family: Roboto, sans-serif; font-size: 14px; outline: none;
+    transition: border-color .15s, box-shadow .15s; appearance: none;
   }
-  .field input:focus,
-  .field select:focus {
-    border-color: var(--accent);
+  input:focus, select:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--blue) 20%, transparent);
   }
-  .field select option {
-    background: var(--surface);
+  .select-wrap { position: relative; }
+  .select-wrap::after {
+    content: ''; position: absolute; right: 12px; top: 50%;
+    transform: translateY(-50%); border: 5px solid transparent;
+    border-top-color: var(--muted); border-bottom: none; pointer-events: none;
   }
-  .checkbox-row {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    margin-top: 1.6rem;
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 18px -24px; }
+  .section-lbl {
+    font-size: 11px; font-weight: 500; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 12px;
   }
-  .checkbox-row input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    accent-color: var(--accent);
-    cursor: pointer;
+  /* Toggle */
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
+  .toggle-info { flex: 1; }
+  .toggle-name { font-size: 14px; font-weight: 500; }
+  .toggle-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; margin-left: 16px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-track {
+    position: absolute; inset: 0; border-radius: 20px;
+    background: var(--border); cursor: pointer; transition: background .2s;
   }
-  .checkbox-row label {
-    color: var(--text);
-    font-size: 0.9rem;
-    cursor: pointer;
+  .toggle-thumb {
+    position: absolute; left: 2px; top: 2px; width: 16px; height: 16px;
+    border-radius: 50%; background: white; box-shadow: 0 1px 3px rgba(0,0,0,.3);
+    transition: transform .2s; pointer-events: none;
   }
+  .toggle input:checked ~ .toggle-track { background: var(--blue); }
+  .toggle input:checked ~ .toggle-thumb { transform: translateX(16px); }
+  /* Buttons */
   .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.65rem 1.4rem;
-    border-radius: 7px;
-    border: none;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s, opacity 0.15s;
+    display: inline-flex; align-items: center; gap: 6px; height: 36px;
+    padding: 0 20px; border: none; border-radius: 4px;
+    font-family: Roboto, sans-serif; font-size: 14px; font-weight: 500;
+    cursor: pointer; letter-spacing: .01em; transition: box-shadow .15s, filter .15s;
     text-decoration: none;
   }
-  .btn-primary {
-    background: var(--accent);
-    color: #fff;
+  .btn-blue { background: var(--blue); color: #fff; }
+  .btn-blue:hover { filter: brightness(1.08); box-shadow: var(--shadow-1); }
+  .btn-blue:disabled { opacity: .55; cursor: not-allowed; }
+  .btn-outline { background: transparent; color: var(--blue); border: 1px solid var(--border); }
+  .btn-outline:hover { background: var(--blue-bg); }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-green:hover { filter: brightness(1.08); }
+  /* Progress */
+  .progress-hd {
+    padding: 14px 24px; display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--border);
   }
-  .btn-primary:hover { background: var(--accent-hover); }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-success {
-    background: var(--success);
-    color: #fff;
+  .spinner {
+    width: 18px; height: 18px; border: 2px solid var(--border);
+    border-top-color: var(--blue); border-radius: 50%;
+    animation: spin .8s linear infinite; flex-shrink: 0;
   }
-  .btn-success:hover { filter: brightness(0.9); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .progress-status { font-size: 13px; color: var(--muted); flex: 1; }
+  .progress-status b { color: var(--text); font-weight: 500; }
   #progress-log {
-    background: #080a10;
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    padding: 1rem;
-    height: 220px;
-    overflow-y: auto;
-    font-family: 'Cascadia Code', 'Fira Code', monospace;
-    font-size: 0.8rem;
-    line-height: 1.7;
-    color: var(--muted);
+    font-family: 'Roboto Mono', 'Fira Code', monospace; font-size: 12px;
+    line-height: 1.8; color: var(--muted); padding: 12px 24px;
+    height: 190px; overflow-y: auto; background: var(--surface2);
   }
-  #progress-log .line-ok  { color: #86efac; }
-  #progress-log .line-err { color: #fca5a5; }
-  #progress-log .line-info{ color: #93c5fd; }
+  #progress-log .line-ok   { color: var(--green); }
+  #progress-log .line-err  { color: var(--red); }
+  #progress-log .line-info { color: var(--blue); }
+  /* Stats pills */
+  .stat-row { display: flex; gap: 8px; flex-wrap: wrap; padding: 14px 24px 0; }
+  .stat-pill {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 16px; padding: 3px 10px; font-size: 12px; color: var(--muted);
+  }
+  .stat-pill .val { color: var(--text); font-weight: 500; font-variant-numeric: tabular-nums; }
+  /* Results */
+  .result-actions {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    padding: 14px 24px; border-bottom: 1px solid var(--border);
+  }
+  #dashboard-frame { width: 100%; height: 660px; border: none; display: block; }
   #results { display: none; }
-  #results .actions {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    margin-bottom: 1.25rem;
-  }
-  #dashboard-frame {
-    width: 100%;
-    height: 700px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--bg);
-  }
-  .status-dot {
-    display: inline-block;
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--muted);
-    margin-right: 6px;
-    vertical-align: middle;
-  }
-  .status-dot.running { background: var(--accent); animation: pulse 1s infinite; }
-  .status-dot.done    { background: var(--success); }
-  .status-dot.error   { background: var(--error); }
-  @keyframes pulse {
-    0%,100% { opacity: 1; }
-    50%      { opacity: 0.4; }
-  }
-  #status-line {
-    font-size: 0.85rem;
-    color: var(--muted);
-    margin-bottom: 0.75rem;
-    display: flex;
-    align-items: center;
-  }
+  #progress-card { display: none; }
 </style>
 </head>
 <body>
-<div class="container">
-  <h1>Google Maps Reviews Scraper</h1>
-  <p class="subtitle">Scrape reviews from any Google Maps place URL and explore the results</p>
+<!-- Header -->
+<div class="g-header">
+  <div class="g-header-logo">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#ea4335"/>
+      <circle cx="12" cy="9" r="2.5" fill="white"/>
+    </svg>
+    <span class="g-header-title">Maps Reviews <b>Scraper</b></span>
+  </div>
+  <span class="g-chip">v0.2.0</span>
+</div>
 
+<div class="container">
   <!-- Form -->
   <div class="card">
-    <h2>Configuration</h2>
-    <form id="scrape-form" onsubmit="startScrape(event)">
-      <div class="form-grid">
-        <div class="field full">
+    <div class="card-hd">
+      <div class="card-title">Scrape reviews</div>
+      <div class="card-sub">Enter a Google Maps place URL to extract all reviews and generate a dashboard.</div>
+    </div>
+    <div class="card-bd">
+      <form id="scrape-form" onsubmit="startScrape(event)">
+        <div class="field">
           <label for="url">Google Maps URL</label>
           <input type="text" id="url" name="url" placeholder="https://www.google.com/maps/place/..." required>
         </div>
-        <div class="field">
-          <label for="sort">Sort reviews by</label>
-          <select id="sort" name="sort">
-            <option value="relevant">Most Relevant</option>
-            <option value="newest">Newest</option>
-            <option value="highest">Highest Rating</option>
-            <option value="lowest">Lowest Rating</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="limit">Limit (0 = all)</label>
-          <input type="number" id="limit" name="limit" value="0" min="0">
-        </div>
-        <div class="field">
-          <label for="language">Language code</label>
-          <input type="text" id="language" name="language" value="en" placeholder="en">
-        </div>
-        <div class="field">
-          <label for="min_rating">Min rating (1–5)</label>
-          <input type="number" id="min_rating" name="min_rating" value="1" min="1" max="5">
-        </div>
-        <div class="field">
-          <label for="max_rating">Max rating (1–5)</label>
-          <input type="number" id="max_rating" name="max_rating" value="5" min="1" max="5">
-        </div>
-        <div class="field">
-          <div class="checkbox-row">
-            <input type="checkbox" id="headless" name="headless">
-            <label for="headless">Headless mode (no browser window)</label>
+        <hr class="divider">
+        <div class="section-lbl">Review options</div>
+        <div class="form-row">
+          <div class="field">
+            <label for="sort">Sort by</label>
+            <div class="select-wrap">
+              <select id="sort" name="sort">
+                <option value="relevant">Most relevant</option>
+                <option value="newest">Newest</option>
+                <option value="highest">Highest rating</option>
+                <option value="lowest">Lowest rating</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="language">Language</label>
+            <input type="text" id="language" name="language" value="en" placeholder="en / es / fr">
           </div>
         </div>
-      </div>
-      <div style="margin-top:1.25rem">
-        <button type="submit" class="btn btn-primary" id="start-btn">▶ Start Scraping</button>
-      </div>
-    </form>
+        <div class="form-row">
+          <div class="field">
+            <label for="min_rating">Min rating (1–5)</label>
+            <input type="number" id="min_rating" name="min_rating" value="1" min="1" max="5">
+          </div>
+          <div class="field">
+            <label for="max_rating">Max rating (1–5)</label>
+            <input type="number" id="max_rating" name="max_rating" value="5" min="1" max="5">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="limit">Limit (0 = all)</label>
+            <input type="number" id="limit" name="limit" value="0" min="0">
+          </div>
+          <div class="field">
+            <label for="since">Stop before (YYYY-MM)</label>
+            <input type="text" id="since" name="since" placeholder="e.g. 2024-01">
+          </div>
+        </div>
+        <hr class="divider">
+        <div class="section-lbl">Behaviour</div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-name">Headless mode</div>
+            <div class="toggle-desc">Run Chrome in the background — no window opens</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="headless" name="headless">
+            <span class="toggle-track"></span>
+            <span class="toggle-thumb"></span>
+          </label>
+        </div>
+        <div style="margin-top:20px">
+          <button type="submit" class="btn btn-blue" id="start-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            Start scraping
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- Progress -->
-  <div class="card" id="progress-card" style="display:none">
-    <h2>Progress</h2>
-    <div id="status-line">
-      <span class="status-dot" id="status-dot"></span>
-      <span id="status-text">Initialising…</span>
+  <div class="card" id="progress-card">
+    <div class="card-hd">
+      <div class="card-title" id="progress-place">Scraping…</div>
+    </div>
+    <div class="stat-row" id="stat-row" style="padding-bottom:14px">
+      <span class="stat-pill">Found <span class="val" id="stat-found">0</span></span>
+      <span class="stat-pill">New <span class="val" id="stat-new">0</span></span>
+      <span class="stat-pill">Pages <span class="val" id="stat-pages">0</span></span>
+    </div>
+    <div class="progress-hd">
+      <div class="spinner" id="spinner"></div>
+      <div class="progress-status"><span id="status-text">Starting…</span></div>
     </div>
     <div id="progress-log"></div>
   </div>
 
   <!-- Results -->
   <div class="card" id="results">
-    <h2>Results</h2>
-    <div class="actions">
-      <a id="csv-link" class="btn btn-success" href="#" download>⬇ Download CSV</a>
+    <div class="card-hd">
+      <div class="card-title" id="result-title">Done</div>
+      <div class="card-sub" id="result-sub"></div>
+    </div>
+    <div class="result-actions">
+      <a id="csv-link" class="btn btn-green" href="#" download>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        Download CSV
+      </a>
+      <button class="btn btn-outline" onclick="resetForm()">↩ New scrape</button>
     </div>
     <iframe id="dashboard-frame" src="about:blank" title="Dashboard"></iframe>
   </div>
@@ -346,6 +418,7 @@ function startScrape(e) {
   const headless  = document.getElementById('headless').checked ? '1' : '0';
   const minRating = document.getElementById('min_rating').value;
   const maxRating = document.getElementById('max_rating').value;
+  const since     = document.getElementById('since').value.trim();
 
   if (!url) { alert('Please enter a Google Maps URL'); return; }
 
@@ -353,32 +426,48 @@ function startScrape(e) {
   document.getElementById('progress-log').innerHTML = '';
   document.getElementById('results').style.display = 'none';
   document.getElementById('progress-card').style.display = 'block';
+  document.getElementById('progress-place').textContent = 'Scraping…';
+  document.getElementById('stat-found').textContent = '0';
+  document.getElementById('stat-new').textContent = '0';
+  document.getElementById('stat-pages').textContent = '0';
+  document.getElementById('spinner').style.display = '';
   btn.disabled = true;
-  btn.textContent = '⏳ Scraping…';
-  setStatus('running', 'Starting scraper…');
 
-  const params = new URLSearchParams({ url, sort, limit, language, headless,
-                                       min_rating: minRating, max_rating: maxRating });
+  const params = new URLSearchParams({ url, sort, limit, language, headless, min_rating: minRating, max_rating: maxRating });
+  if (since) params.set('since', since);
   es = new EventSource('/scrape?' + params.toString());
+
+  let totalFound = 0, totalNew = 0, pages = 0;
 
   es.onmessage = function(event) {
     try {
       const data = JSON.parse(event.data);
       if (data.type === 'progress') {
-        log(data.msg, data.level === 'error' ? 'line-err' : data.level === 'info' ? 'line-info' : 'line-ok');
-        setStatus('running', data.msg);
+        const cls = data.level === 'error' ? 'line-err' : data.level === 'info' ? 'line-info' : 'line-ok';
+        log(data.msg, cls);
+        document.getElementById('status-text').textContent = data.msg;
+        // parse "Page N | +X new | Y total" to update pills
+        const m = data.msg.match(/Page\s+(\d+)\s*\|\s*\+(\d+) new\s*\|\s*([\d,]+) total/);
+        if (m) {
+          pages = parseInt(m[1]);
+          totalNew += parseInt(m[2]);
+          totalFound = parseInt(m[3].replace(/,/g,''));
+          document.getElementById('stat-found').textContent = totalFound.toLocaleString();
+          document.getElementById('stat-new').textContent = totalNew.toLocaleString();
+          document.getElementById('stat-pages').textContent = pages;
+        }
       } else if (data.type === 'done') {
         es.close(); es = null;
         btn.disabled = false;
-        btn.textContent = '▶ Start Scraping';
-        setStatus('done', 'Scraping complete!');
-        log('✓ Done!', 'line-ok');
-        showResults(data);
+        document.getElementById('spinner').style.display = 'none';
+        document.getElementById('status-text').textContent = 'Done — ' + totalFound.toLocaleString() + ' reviews';
+        log('✓ Complete', 'line-ok');
+        showResults(data, totalFound, totalNew, pages);
       } else if (data.type === 'error') {
         es.close(); es = null;
         btn.disabled = false;
-        btn.textContent = '▶ Start Scraping';
-        setStatus('error', 'Error: ' + data.msg);
+        document.getElementById('spinner').style.display = 'none';
+        document.getElementById('status-text').textContent = 'Error: ' + data.msg;
         log('✗ ' + data.msg, 'line-err');
       }
     } catch(err) {
@@ -390,25 +479,33 @@ function startScrape(e) {
     if (es && es.readyState === EventSource.CLOSED) return;
     if (es) { es.close(); es = null; }
     btn.disabled = false;
-    btn.textContent = '▶ Start Scraping';
-    setStatus('error', 'Connection lost');
+    document.getElementById('spinner').style.display = 'none';
+    document.getElementById('status-text').textContent = 'Connection lost';
     log('✗ Connection to server lost', 'line-err');
   };
 }
 
-function showResults(data) {
+function showResults(data, total, newCount, pages) {
   const results = document.getElementById('results');
   results.style.display = 'block';
+  document.getElementById('result-title').textContent = 'Done';
+  document.getElementById('result-sub').textContent =
+    total.toLocaleString() + ' reviews · ' + newCount.toLocaleString() + ' new · ' + pages + ' pages';
 
   const csvLink = document.getElementById('csv-link');
   csvLink.href = '/download?path=' + encodeURIComponent(data.csv_path);
   csvLink.download = data.csv_path.split('/').pop() || 'reviews.csv';
 
   if (data.dashboard_b64) {
-    const src = 'data:text/html;base64,' + data.dashboard_b64;
-    document.getElementById('dashboard-frame').src = src;
+    document.getElementById('dashboard-frame').src = 'data:text/html;base64,' + data.dashboard_b64;
   }
   results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetForm() {
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('progress-card').style.display = 'none';
+  document.getElementById('url').focus();
 }
 </script>
 </body>
@@ -443,9 +540,10 @@ async def scrape_sse(
     headless: str = Query("0"),
     min_rating: int = Query(1),
     max_rating: int = Query(5),
+    since: str = Query(""),
 ) -> StreamingResponse:
     return StreamingResponse(
-        _scrape_stream(url, sort, limit, language, headless == "1", min_rating, max_rating),
+        _scrape_stream(url, sort, limit, language, headless == "1", min_rating, max_rating, since or None),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -470,6 +568,7 @@ async def _scrape_stream(
     headless: bool,
     min_rating: int,
     max_rating: int,
+    since: str | None = None,
 ) -> AsyncGenerator[str, None]:
     queue: asyncio.Queue[dict | None] = asyncio.Queue()
 
@@ -518,6 +617,7 @@ async def _scrape_stream(
                 sort=sort,
                 headless=headless,
                 language=language,
+                since=since,
                 min_rating=min_rating,
                 max_rating=max_rating,
             )
