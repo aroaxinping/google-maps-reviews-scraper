@@ -47,9 +47,31 @@ Most scrapers break after ~900 reviews because they rely on scrolling, which hit
 
 ## Requirements
 
-- Python ≥ 3.11
-- Google Chrome installed (Linux, macOS, or Windows)
-- A Google account logged in on Chrome (for session auth)
+| Requirement | Why |
+|---|---|
+| Python ≥ 3.11 | Core runtime |
+| **Google Chrome** (not Chromium) | Google uses browser fingerprinting — Chrome passes, Chromium often doesn't |
+| **A Google account logged into Chrome** | Reviews are only fully accessible to signed-in users; without a session you'll get rate-limited within the first few pages |
+| Stable internet connection | Each page is a live XHR call; flaky connections trigger retries |
+
+> **Important:** the tool uses your existing Chrome profile (`~/.playwright-google-profile`). The first time it runs, Chrome will open visibly so you can sign in to Google. After that your session is saved and `--headless` works reliably.
+
+### What will cause it to get blocked
+
+| Situation | Risk | Mitigation |
+|---|---|---|
+| No Google session | 🔴 High | Sign in once in non-headless mode first |
+| Scraping > 50 places back-to-back | 🟡 Medium | Use `scrape-file` — it pauses 15–45 s between places automatically |
+| `--headless` on a fresh profile | 🟡 Medium | Run once without `--headless` to warm the session |
+| Shared / datacenter IP | 🟡 Medium | Use your home/office connection, not a VPS |
+| Very high volume (thousands of places/day) | 🔴 High | Space runs across multiple sessions |
+
+The scraper already applies several anti-detection measures automatically:
+- Hides the Playwright `webdriver` flag via JS injection on every page
+- Uses random delays between pages (0.8–2.5 s) instead of a fixed interval
+- Pauses 15–45 s between places when using `scrape-file`
+- Detects CAPTCHA / rate-limit responses and pauses 60 s before retrying
+- Uses exponential backoff (up to 60 s) on network errors
 
 ## Install
 
@@ -57,6 +79,15 @@ Most scrapers break after ~900 reviews because they rely on scrolling, which hit
 pip install uv
 uv pip install -e .
 playwright install chromium
+```
+
+### First-time setup (sign in to Google)
+
+```bash
+# Run once without --headless so Chrome opens visibly
+gmaps-reviews scrape "https://www.google.com/maps/place/..." --no-headless
+# Sign in to Google if prompted — your session is saved automatically
+# All future runs can use --headless
 ```
 
 ## Usage
