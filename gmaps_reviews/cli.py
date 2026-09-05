@@ -255,6 +255,11 @@ def scrape_file_cmd(
         console.rule(f"[bold]{i}/{len(urls)}[/bold] · {place_name}")
         _scrape_one(url, db, limit, sort, headless, language, since, min_rating, max_rating,
                     None, None, None, output_dir)
+        if i < len(urls):
+            import random as _random, time as _time
+            pause = _random.uniform(15, 45)
+            console.print(f"[dim]Pausing {pause:.0f}s before next place…[/dim]")
+            _time.sleep(pause)
 
     console.print(f"\n[green bold]All done.[/green bold] Scraped {len(urls)} places → {db}")
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import random
 import re
 import shutil
 import sys
@@ -70,6 +71,19 @@ SKIP_HEADERS = {
     "sec-fetch-mode", "sec-fetch-site", "sec-ch-ua",
     "sec-ch-ua-mobile", "sec-ch-ua-platform", "upgrade-insecure-requests",
 }
+
+# Injected on every new page — hides Playwright/automation signals
+_STEALTH_JS = """
+Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+Object.defineProperty(navigator, 'plugins', {get: () => [1,2,3,4,5]});
+Object.defineProperty(navigator, 'languages', {get: () => ['en-US','en']});
+window.chrome = {runtime: {}};
+const origQuery = window.navigator.permissions.query;
+window.navigator.permissions.query = (p) =>
+  p.name === 'notifications'
+    ? Promise.resolve({state: Notification.permission})
+    : origQuery(p);
+"""
 
 _XHR_JS = """
 async ([url, postData, headersList]) => {
@@ -220,7 +234,12 @@ async def scrape(
                 user_data_dir=str(PROFILE_DIR),
                 executable_path=chrome_path,
                 headless=headless,
-                args=[f"--lang={language}", "--disable-blink-features=AutomationControlled"],
+                args=[
+                    f"--lang={language}",
+                    "--disable-blink-features=AutomationControlled",
+                    "--no-first-run",
+                    "--no-default-browser-check",
+                ],
                 locale=locale_str,
                 ignore_https_errors=True,
             )
@@ -233,6 +252,7 @@ async def scrape(
                 ) from exc
             raise
 
+        await context.add_init_script(_STEALTH_JS)
         page: Page = context.pages[0] if context.pages else await context.new_page()
 
         await page.goto(maps_url, wait_until="domcontentloaded", timeout=60000)
@@ -315,7 +335,7 @@ async def scrape(
                 break
 
             current_cursor = next_cursor
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(random.uniform(0.8, 2.5))
 
         await page.wait_for_timeout(1500)
         await context.close()
