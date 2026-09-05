@@ -27,10 +27,6 @@ from .parser import extract_total_count
 
 app = FastAPI(title="Google Maps Reviews Scraper")
 
-# ---------------------------------------------------------------------------
-# Helpers (mirrors cli.py without the Rich / Typer dependency)
-# ---------------------------------------------------------------------------
-
 def _place_id_from_url(url: str) -> str:
     m = re.search(r"0x[0-9a-f]+:0x[0-9a-f]+", url, re.I)
     if m:
@@ -48,10 +44,6 @@ def _place_name_from_url(url: str) -> str:
 def _slugify(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
-
-# ---------------------------------------------------------------------------
-# HTML template — Google Material Design aesthetic
-# ---------------------------------------------------------------------------
 
 HTML_TEMPLATE = r"""<!DOCTYPE html>
 <html lang="en">
@@ -711,10 +703,6 @@ function resetForm() {
 """
 
 
-# ---------------------------------------------------------------------------
-# Routes
-# ---------------------------------------------------------------------------
-
 @app.get("/", response_class=HTMLResponse)
 async def index() -> HTMLResponse:
     return HTMLResponse(content=HTML_TEMPLATE)
@@ -753,10 +741,6 @@ async def scrape_sse(
         },
     )
 
-
-# ---------------------------------------------------------------------------
-# SSE generator
-# ---------------------------------------------------------------------------
 
 def _sse(payload: dict) -> str:
     return "data: " + json.dumps(payload, ensure_ascii=False) + "\n\n"
@@ -888,10 +872,6 @@ async def _scrape_stream(
         import shutil as _shutil
         _shutil.rmtree(tmpdir, ignore_errors=True)
 
-
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     import uvicorn

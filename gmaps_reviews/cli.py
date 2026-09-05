@@ -333,7 +333,6 @@ def stats(
     console.print(f"\n[bold cyan]Stats[/bold cyan] — {db}" + (f" · {place_id}" if place_id else ""))
     console.print()
 
-    # Summary cards
     table = Table(show_header=False, box=None, padding=(0, 2))
     table.add_column(style="dim")
     table.add_column(style="bold cyan")
@@ -346,7 +345,6 @@ def stats(
         table.add_row("Date range", f"{s['date_range'][0]} → {s['date_range'][1]}")
     console.print(table)
 
-    # Rating distribution
     console.print("\n[dim]Rating distribution[/dim]")
     for star in ["5", "4", "3", "2", "1"]:
         count = s["rating_dist"].get(star, 0)
@@ -354,7 +352,6 @@ def stats(
         bar = "█" * int(pct / 2)
         console.print(f"  {star}★  {bar:<50} {count:,} ({pct:.1f}%)")
 
-    # Top words
     if s["top_words"]:
         console.print("\n[dim]Top words[/dim]")
         words = "  ".join(f"[cyan]{w}[/cyan] {c}" for w, c in s["top_words"][:15])

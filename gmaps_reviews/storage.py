@@ -44,12 +44,6 @@ CREATE TABLE IF NOT EXISTS reviews (
     source        TEXT
 );
 
-CREATE TABLE IF NOT EXISTS raw_batches (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    place_id    TEXT,
-    captured_at TEXT,
-    data        TEXT
-);
 """
 
 CSV_FIELDS = [
@@ -103,13 +97,6 @@ class Store:
                 continue
         self.con.commit()
         return inserted
-
-    def save_raw_batch(self, place_id: str, captured_at: str, raw: str) -> None:
-        self.con.execute(
-            "INSERT INTO raw_batches (place_id, captured_at, data) VALUES (?,?,?)",
-            (place_id, captured_at, json.dumps(raw)),
-        )
-        self.con.commit()
 
     def known_review_ids(self, place_id: str) -> set[str]:
         rows = self.con.execute(

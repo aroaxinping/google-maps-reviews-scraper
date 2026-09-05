@@ -290,14 +290,12 @@ async def scrape(
 
             reviews, next_cursor = parse_batch(raw, captured_at)
 
-            # Filter by rating if not both defaults
             if min_rating != 0 or max_rating != 5:
                 reviews = [
                     r for r in reviews
                     if min_rating <= int(r["rating"]) <= max_rating
                 ]
 
-            # Check since cutoff
             since_break = False
             if since is not None and _older_than(reviews, since):
                 reviews = [

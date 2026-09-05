@@ -1,6 +1,6 @@
 [project]
 name = "google-maps-reviews-scraper"
-version = "0.2.0"
+version = "0.3.0"
 description = "Scrape all Google Maps reviews for any place — free, no API key, unlimited reviews"
 readme = "README.md"
 license = {text = "MIT"}
@@ -13,7 +13,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Topic :: Internet :: WWW/HTTP :: Indexing/Searching",
+    "Topic :: Internet :: WWW/HTTP :: Browsers",
 ]
 dependencies = [
     "playwright>=1.44",

@@ -2,16 +2,10 @@
 
 from __future__ import annotations
 import json
-import re
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
-
-def _extract_words(text: str) -> list:
-    latin = [w.lower() for w in re.findall(r"[a-zA-ZÀ-ÿ]{4,}", text)]
-    cjk   = re.findall(r"[一-鿿㐀-䶿가-힯぀-ゟ゠-ヿ]{2,}", text)
-    arabic = re.findall(r"[؀-ۿ]{4,}", text)
-    return latin + cjk + arabic
+from .storage import _extract_words
 
 
 def _rating_distribution(reviews: list[dict]) -> dict:
@@ -47,7 +41,6 @@ def _top_words(reviews: list[dict], n: int = 40) -> list[tuple[str, int]]:
 
 
 def _reply_rate_by_month(reviews: list) -> dict:
-    from collections import defaultdict
     total: dict = defaultdict(int)
     replied: dict = defaultdict(int)
     for r in reviews:
