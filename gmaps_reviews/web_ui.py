@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import AsyncGenerator
 from urllib.parse import unquote
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.responses import StreamingResponse
 
@@ -61,7 +61,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <title>Maps Reviews Scraper</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400&display=swap">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -377,12 +377,14 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             <input type="text" id="url" name="url"
               placeholder="https://www.google.com/maps/place/..." required>
             <button type="button" class="btn-copy" id="copy-btn" onclick="copyUrl()" title="Copy URL to clipboard">
+
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
               </svg>
               Copy
             </button>
           </div>
+          <p id="url-error" style="color:var(--red,#ea4335);font-size:12px;margin:4px 0 0;display:none"></p>
           <details class="how-details">
             <summary>How to get the right URL</summary>
             <div class="how-body">
@@ -426,12 +428,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         </div>
         <div class="form-row">
           <div class="field">
-            <label for="limit">Limit (0 = all)</label>
-            <input type="number" id="limit" name="limit" value="0" min="0">
+            <label for="limit">Max reviews (0 = all)</label>
+            <input type="number" id="limit" name="limit" value="0" min="0" step="1">
           </div>
           <div class="field">
             <label for="since">Stop before (YYYY-MM)</label>
-            <input type="text" id="since" name="since" placeholder="e.g. 2024-01">
+            <input type="month" id="since" name="since" placeholder="e.g. 2024-01">
             <small>Stops at reviews older than this month</small>
           </div>
         </div>
@@ -439,11 +441,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <div class="section-lbl">Behaviour</div>
         <div class="toggle-row">
           <div class="toggle-info">
-            <div class="toggle-name">Headless mode</div>
+            <div class="toggle-name" id="headless-label">Headless mode</div>
             <div class="toggle-desc">Run Chrome in the background — no window opens</div>
           </div>
           <label class="toggle">
-            <input type="checkbox" id="headless" name="headless">
+            <input type="checkbox" id="headless" name="headless" checked aria-labelledby="headless-label">
             <span class="toggle-track"></span>
             <span class="toggle-thumb"></span>
           </label>
@@ -480,10 +482,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       <span class="stat-pill">Pages <span class="val" id="stat-pages">0</span></span>
     </div>
     <div class="progress-hd">
-      <div class="spinner" id="spinner"></div>
-      <div class="progress-status"><span id="status-text">Starting…</span></div>
+      <div class="spinner" id="spinner" role="status" aria-label="Scraping in progress"></div>
+      <div class="progress-status"><span id="status-text" role="status">Starting…</span></div>
     </div>
-    <div id="progress-log" aria-live="polite" aria-label="Progress log"></div>
+    <div id="progress-log" aria-live="polite" aria-relevant="additions" aria-label="Progress log"></div>
   </div>
 
   <!-- Results card -->
@@ -515,6 +517,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
 <script>
 let es = null;
+let scrapeCompleted = false;
 
 function log(msg, cls) {
   const box = document.getElementById('progress-log');
@@ -548,6 +551,8 @@ function startScrape(e) {
   e.preventDefault();
   if (es) { es.close(); es = null; }
 
+  document.getElementById('url-error').style.display = 'none';
+
   const btn  = document.getElementById('start-btn');
   const url       = document.getElementById('url').value.trim();
   const sort      = document.getElementById('sort').value;
@@ -558,7 +563,18 @@ function startScrape(e) {
   const maxRating = document.getElementById('max_rating').value;
   const since     = document.getElementById('since').value.trim();
 
-  if (!url) { alert('Please enter a Google Maps URL'); return; }
+  if (!url || !url.includes('google.com/maps')) {
+    const errEl = document.getElementById('url-error');
+    errEl.textContent = 'Please enter a valid Google Maps place URL (must include google.com/maps)';
+    errEl.style.display = 'block';
+    document.getElementById('url').focus();
+    return;
+  }
+
+  if (parseInt(minRating) > parseInt(maxRating)) {
+    alert('Min rating cannot be greater than max rating');
+    return;
+  }
 
   /* Reset UI — show skeleton immediately, hide progress until first event */
   document.getElementById('progress-log').innerHTML = '';
@@ -609,6 +625,7 @@ function startScrape(e) {
           document.getElementById('stat-pages').textContent = pages;
         }
       } else if (data.type === 'done') {
+        scrapeCompleted = true;
         es.close(); es = null;
         btn.disabled = false;
         document.getElementById('skeleton-card').style.display = 'none';
@@ -631,6 +648,7 @@ function startScrape(e) {
   };
 
   es.onerror = function() {
+    if (scrapeCompleted) { scrapeCompleted = false; return; }
     if (es && es.readyState === EventSource.CLOSED) return;
     if (es) { es.close(); es = null; }
     btn.disabled = false;
@@ -677,6 +695,14 @@ function resetForm() {
   document.getElementById('results').style.display = 'none';
   document.getElementById('progress-card').style.display = 'none';
   document.getElementById('skeleton-card').style.display = 'none';
+  document.getElementById('url').value = '';
+  document.getElementById('url-error').style.display = 'none';
+  document.getElementById('progress-log').innerHTML = '';
+  ['stat-found', 'stat-new', 'stat-pages'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '0';
+  });
+  scrapeCompleted = false;
   document.getElementById('url').focus();
 }
 </script>
@@ -696,10 +722,14 @@ async def index() -> HTMLResponse:
 
 @app.get("/download")
 async def download(path: str = Query(...)) -> FileResponse:
+    import pathlib as _pl
     p = Path(path)
     if not p.exists() or not p.is_file():
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="File not found")
+    try:
+        p.resolve().relative_to(_pl.Path(tempfile.gettempdir()).resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Access denied")
     return FileResponse(p, filename=p.name, media_type="text/csv")
 
 
@@ -799,60 +829,64 @@ async def _scrape_stream(
 
     task = asyncio.create_task(run_scraper())
 
-    # yield a keep-alive comment so the browser connects immediately
-    yield ": connected\n\n"
-
     try:
-        while True:
-            try:
-                item = await asyncio.wait_for(queue.get(), timeout=30.0)
-            except asyncio.TimeoutError:
-                yield ": keepalive\n\n"
-                continue
+        # yield a keep-alive comment so the browser connects immediately
+        yield ": connected\n\n"
 
-            if item is None:
-                break
+        try:
+            while True:
+                try:
+                    item = await asyncio.wait_for(queue.get(), timeout=30.0)
+                except asyncio.TimeoutError:
+                    yield ": keepalive\n\n"
+                    continue
 
-            if item.get("type") == "error":
+                if item is None:
+                    break
+
+                if item.get("type") == "error":
+                    yield _sse(item)
+                    return
+
                 yield _sse(item)
-                return
 
-            yield _sse(item)
+        finally:
+            if not task.done():
+                task.cancel()
 
+        # Scraping done — build outputs
+        try:
+            total_in_db = store.total_reviews(place_id)
+            store.upsert_place({
+                "place_id": place_id,
+                "name": place_name,
+                "total_reviews": total_in_db,
+                "scraped_at": captured_at,
+            })
+
+            n_csv = store.export_csv(csv_path, place_id)
+            yield _sse({"type": "progress", "msg": f"CSV exported: {n_csv:,} rows → {csv_path.name}", "level": "info"})
+
+            reviews = store.all_reviews(place_id)
+            generate(reviews, dash_path, place_name=place_name)
+            yield _sse({"type": "progress", "msg": "Dashboard generated", "level": "info"})
+
+            dash_b64 = base64.b64encode(dash_path.read_bytes()).decode("ascii")
+
+            yield _sse({
+                "type": "done",
+                "csv_path": str(csv_path),
+                "dashboard_path": str(dash_path),
+                "dashboard_b64": dash_b64,
+                "total": total_in_db,
+            })
+        except Exception as exc:
+            yield _sse({"type": "error", "msg": f"Post-processing error: {exc}"})
+        finally:
+            store.close()
     finally:
-        if not task.done():
-            task.cancel()
-
-    # Scraping done — build outputs
-    try:
-        total_in_db = store.total_reviews(place_id)
-        store.upsert_place({
-            "place_id": place_id,
-            "name": place_name,
-            "total_reviews": total_in_db,
-            "scraped_at": captured_at,
-        })
-
-        n_csv = store.export_csv(csv_path, place_id)
-        yield _sse({"type": "progress", "msg": f"CSV exported: {n_csv:,} rows → {csv_path.name}", "level": "info"})
-
-        reviews = store.all_reviews(place_id)
-        generate(reviews, dash_path, place_name=place_name)
-        yield _sse({"type": "progress", "msg": "Dashboard generated", "level": "info"})
-
-        dash_b64 = base64.b64encode(dash_path.read_bytes()).decode("ascii")
-
-        yield _sse({
-            "type": "done",
-            "csv_path": str(csv_path),
-            "dashboard_path": str(dash_path),
-            "dashboard_b64": dash_b64,
-            "total": total_in_db,
-        })
-    except Exception as exc:
-        yield _sse({"type": "error", "msg": f"Post-processing error: {exc}"})
-    finally:
-        store.close()
+        import shutil as _shutil
+        _shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 # ---------------------------------------------------------------------------
