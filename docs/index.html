@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Taal Vista Hotel — Live Demo — Reviews Dashboard</title>
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0f1117; color: #e2e8f0; }
+  header { padding: 2rem; border-bottom: 1px solid #1e2130; }
+  h1 { font-size: 1.6rem; font-weight: 700; }
+  .sub { color: #94a3b8; margin-top: .3rem; font-size: .9rem; }
+  .stats { display: flex; flex-wrap: wrap; gap: 1rem; padding: 1.5rem 2rem; }
+  .card { background: #1e2130; border-radius: 10px; padding: 1.2rem 1.6rem; flex: 1; min-width: 140px; }
+  .card .val { font-size: 2rem; font-weight: 800; color: #60a5fa; }
+  .card .lbl { font-size: .8rem; color: #94a3b8; margin-top: .2rem; }
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 1.5rem; padding: 0 2rem 2rem; }
+  .chart-box { background: #1e2130; border-radius: 10px; padding: 1rem; }
+  .chart-box h2 { font-size: .95rem; color: #94a3b8; margin-bottom: .5rem; padding: .2rem .5rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Taal Vista Hotel — Live Demo</h1>
+  <div class="sub">Google Maps Reviews Dashboard · 4,370 reviews</div>
+</header>
+<div class="stats">
+  <div class="card"><div class="val">4,370</div><div class="lbl">Total reviews</div></div>
+  <div class="card"><div class="val">4.29★</div><div class="lbl">Average rating</div></div>
+  <div class="card"><div class="val">138</div><div class="lbl">With text</div></div>
+  <div class="card"><div class="val">2,851</div><div class="lbl">Owner replies</div></div>
+  <div class="card"><div class="val">2,834</div><div class="lbl">Local Guides</div></div>
+</div>
+<div class="charts">
+  <div class="chart-box"><h2>Rating distribution</h2><div id="ch-ratings"></div></div>
+  <div class="chart-box"><h2>Reviews over time (estimated)</h2><div id="ch-timeline"></div></div>
+  <div class="chart-box"><h2>Top words in reviews</h2><div id="ch-words"></div></div>
+  <div class="chart-box"><h2>Owner Reply Rate Over Time</h2><div id="ch-reply"></div></div>
+</div>
+<script>
+const DATA = {"place_name": "Taal Vista Hotel — Live Demo", "total": 4370, "with_text": 138, "with_reply": 2851, "avg_rating": 4.29, "local_guides": 2834, "ratings": {"1": 112, "2": 74, "3": 316, "4": 1083, "5": 2642}, "monthly": {"2019-09": 652, "2020-09": 380, "2021-09": 230, "2022-09": 322, "2023-09": 479, "2024-09": 316, "2025-10": 19, "2025-11": 15, "2025-12": 16, "2026-01": 18, "2026-02": 11, "2026-03": 23, "2026-04": 15, "2026-05": 20, "2026-06": 18, "2026-07": 16, "2026-08": 39, "2026-09": 7}, "top_words": [["room", 34], ["hotel", 31], ["good", 29], ["food", 26], ["view", 25], ["ranch", 25], ["great", 24], ["skyranch", 23], ["rooms", 22], ["clean", 22], ["breakfast", 21], ["taal", 19], ["safe", 17], ["just", 17], ["there", 17], ["buffet", 16], ["other", 15], ["nice", 15], ["lake", 15], ["restaurants", 13], ["park", 13], ["were", 13], ["well", 13], ["spacious", 13], ["nearby", 12], ["around", 12], ["near", 11], ["walk", 11], ["place", 11], ["tagaytay", 10], ["volcano", 9], ["next", 9], ["amusement", 9], ["best", 9], ["walking", 9], ["wing", 8], ["excellent", 8], ["service", 8], ["beside", 8], ["many", 7]], "reply_rate": {"2019-09": 1.0, "2020-09": 1.0, "2021-09": 1.0, "2022-09": 1.0, "2023-09": 1.0, "2024-09": 1.0, "2025-10": 1.0, "2025-11": 1.0, "2025-12": 1.0, "2026-01": 1.0, "2026-02": 1.0, "2026-03": 1.0, "2026-04": 1.0, "2026-05": 1.0, "2026-06": 1.0, "2026-07": 1.0, "2026-08": 1.0, "2026-09": 1.0}};
+const COLORS = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6'];
+const dark = { paper_bgcolor:'#1e2130', plot_bgcolor:'#1e2130',
+  font:{color:'#e2e8f0'}, margin:{t:10,b:40,l:50,r:10} };
+
+// Rating distribution
+const rLabels = ['1★','2★','3★','4★','5★'];
+const rVals   = [1,2,3,4,5].map(i => DATA.ratings[i] || 0);
+Plotly.newPlot('ch-ratings', [{
+  type:'bar', x:rLabels, y:rVals,
+  marker:{color:COLORS},
+  text:rVals, textposition:'outside'
+}], {...dark, xaxis:{fixedrange:true}, yaxis:{fixedrange:true}}, {displayModeBar:false});
+
+// Timeline
+if (Object.keys(DATA.monthly).length) {
+  const months = Object.keys(DATA.monthly).sort();
+  Plotly.newPlot('ch-timeline', [{
+    type:'scatter', mode:'lines+markers',
+    x:months, y:months.map(m=>DATA.monthly[m]),
+    line:{color:'#60a5fa', width:2},
+    marker:{color:'#60a5fa', size:4}
+  }], {...dark, xaxis:{fixedrange:true}, yaxis:{fixedrange:true}}, {displayModeBar:false});
+} else {
+  document.getElementById('ch-timeline').innerHTML =
+    '<p style="color:#94a3b8;padding:2rem;text-align:center">No date data (reviews lack relative dates)</p>';
+}
+
+// Top words
+const words = DATA.top_words.slice(0,30);
+Plotly.newPlot('ch-words', [{
+  type:'bar', orientation:'h',
+  x: words.map(w=>w[1]).reverse(),
+  y: words.map(w=>w[0]).reverse(),
+  marker:{color:'#818cf8'}
+}], {...dark, xaxis:{fixedrange:true}, yaxis:{fixedrange:true, automargin:true},
+  height: 480}, {displayModeBar:false});
+if (Object.keys(DATA.reply_rate || {}).length >= 2) {
+  const months = Object.keys(DATA.reply_rate).sort();
+  Plotly.newPlot('ch-reply', [{
+    type: 'scatter', mode: 'lines+markers',
+    x: months, y: months.map(m => Math.round(DATA.reply_rate[m]*100)),
+    line: {color: '#22c55e', width: 2},
+    marker: {color: '#22c55e', size: 5},
+    hovertemplate: '%{x}: %{y}%<extra></extra>',
+  }], {
+    ...dark,
+    yaxis: {fixedrange: true, ticksuffix: '%', range: [0, 100]},
+    xaxis: {fixedrange: true},
+  }, {displayModeBar: false});
+}
+</script>
+</body>
+</html>

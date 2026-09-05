@@ -43,6 +43,29 @@ def _slugify(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
 
+def _normalise_since(since: Optional[str]) -> Optional[str]:
+    if not since:
+        return None
+    m = re.match(r"(\d{4}-\d{2})", since)
+    return m.group(1) if m else None
+
+
+def _detect_languages(reviews: list) -> dict | None:
+    try:
+        from langdetect import detect
+    except ImportError:
+        return None
+    counts: dict = {}
+    for r in reviews:
+        if r.get("review_text"):
+            try:
+                lang = detect(r["review_text"])
+                counts[lang] = counts.get(lang, 0) + 1
+            except Exception:
+                pass
+    return counts or None
+
+
 def _scrape_one(
     url: str,
     db: Path,
@@ -139,7 +162,7 @@ def _scrape_one(
         asyncio.run(scrape(
             url, place_id, on_batch,
             limit=limit, sort=sort, headless=headless,
-            language=language, since=since,
+            language=language, since=_normalise_since(since),
             min_rating=min_rating, max_rating=max_rating,
         ))
 
@@ -147,6 +170,12 @@ def _scrape_one(
     console.print(
         f"\n[green]Done.[/green] {new_total:,} new reviews added · {total_in_db:,} total in DB."
     )
+
+    all_reviews_list = store.all_reviews(place_id)
+    langs = _detect_languages(all_reviews_list)
+    if langs:
+        top = sorted(langs.items(), key=lambda x: -x[1])[:5]
+        console.print("  Languages : " + "  ".join(f"[dim]{k}[/dim] {v}" for k, v in top))
 
     store.upsert_place({
         "place_id": place_id, "name": place_name,
@@ -165,8 +194,7 @@ def _scrape_one(
 
     if effective_dashboard:
         effective_dashboard.parent.mkdir(parents=True, exist_ok=True)
-        reviews = store.all_reviews(place_id)
-        generate(reviews, effective_dashboard, place_name=place_name)
+        generate(all_reviews_list, effective_dashboard, place_name=place_name)
         console.print(f"  Dashboard → {effective_dashboard}")
 
     store.close()
@@ -350,6 +378,25 @@ def web(
         raise typer.Exit(1)
     console.print(f"[bold cyan]Web UI[/bold cyan] → http://{host}:{port}")
     uvicorn.run(web_app, host=host, port=port)
+
+
+@app.command()
+def watch(
+    url: Annotated[str, typer.Argument(help="Google Maps place URL")],
+    interval: Annotated[int, typer.Option("--interval", help="Minutes between re-scrapes")] = 10080,
+    db: Annotated[Path, typer.Option("--db")] = DEFAULT_DB,
+    headless: Annotated[bool, typer.Option("--headless/--no-headless")] = True,
+    output_dir: Annotated[Optional[Path], typer.Option("--output-dir")] = None,
+):
+    """Continuously re-scrape a place on a schedule, storing only new reviews."""
+    import time
+    run = 0
+    while True:
+        run += 1
+        console.rule(f"[bold]Run #{run}[/bold]  ·  {datetime.now(tz=timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
+        _scrape_one(url, db, 0, "relevant", headless, "en", None, 0, 5, None, None, None, output_dir)
+        console.print(f"\n[dim]Next run in {interval} min. Ctrl+C to stop.[/dim]")
+        time.sleep(interval * 60)
 
 
 if __name__ == "__main__":

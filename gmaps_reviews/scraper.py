@@ -10,6 +10,7 @@ import asyncio
 import json
 import os
 import re
+import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -46,7 +47,21 @@ def _find_chrome() -> str | None:
     for candidate in _CHROME_CANDIDATES.get(platform, _CHROME_CANDIDATES["linux"]):
         if Path(candidate).exists():
             return candidate
+    for name in ("google-chrome-stable", "google-chrome", "chromium-browser", "chromium", "chrome"):
+        found = shutil.which(name)
+        if found:
+            return found
     return None
+
+
+def _is_blocked(raw: str) -> bool:
+    if not raw or len(raw) < 100:
+        return True
+    lower = raw[:2000].lower()
+    return any(s in lower for s in [
+        "unusual traffic", "captcha", "verify you're not a robot",
+        "our systems have detected", "sign in to continue",
+    ])
 
 
 SKIP_HEADERS = {
@@ -257,10 +272,20 @@ async def scrape(
 
             if raw is None:
                 consecutive_errors += 1
-                if consecutive_errors >= 5:
+                if consecutive_errors >= 8:
                     break
-                await asyncio.sleep(3)
+                await asyncio.sleep(min(2 ** consecutive_errors, 60))
                 continue
+
+            if _is_blocked(raw):
+                if progress:
+                    progress.log("[yellow]Rate limited or CAPTCHA detected — pausing 60s…[/yellow]")
+                await asyncio.sleep(60)
+                consecutive_errors += 1
+                if consecutive_errors >= 8:
+                    break
+                continue
+
             consecutive_errors = 0
 
             reviews, next_cursor = parse_batch(raw, captured_at)

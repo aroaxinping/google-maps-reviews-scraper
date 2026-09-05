@@ -1,6 +1,13 @@
 # google-maps-reviews-scraper
 
+[![PyPI](https://img.shields.io/pypi/v/google-maps-reviews-scraper)](https://pypi.org/project/google-maps-reviews-scraper/)
+[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://aroaxinping.github.io/google-maps-reviews-scraper/)
+
 **Get all Google Maps reviews for any place — free, no API key, no limits.**
+
+[**→ Live dashboard demo (4,370 Taal Vista Hotel reviews)**](https://aroaxinping.github.io/google-maps-reviews-scraper/)
 
 The Google Places API charges ~$17 per 1,000 reviews and caps at 5 per place. This gets them all for $0.
 
