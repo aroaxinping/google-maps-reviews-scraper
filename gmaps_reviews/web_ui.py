@@ -60,6 +60,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Maps Reviews Scraper</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -75,11 +76,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     --blue-dark: #1557b0;
     --green:     #34a853;
     --red:       #ea4335;
+    --shadow-card: 0 1px 3px rgba(60,64,67,.3), 0 4px 8px rgba(60,64,67,.15);
     --shadow-1:  0 1px 2px rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15);
-    /* legacy aliases used in JS-driven classes */
-    --accent: #1a73e8;
-    --success: #34a853;
-    --error: #ea4335;
     --input-bg: #ffffff;
   }
   @media (prefers-color-scheme: dark) {
@@ -95,10 +93,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       --blue-dark:#aecbfa;
       --green:   #81c995;
       --red:     #f28b82;
+      --shadow-card:0 1px 3px rgba(0,0,0,.6),0 4px 8px rgba(0,0,0,.4);
       --shadow-1:0 1px 2px rgba(0,0,0,.6),0 1px 3px 1px rgba(0,0,0,.4);
-      --accent: #8ab4f8;
-      --success: #81c995;
-      --error: #f28b82;
       --input-bg: #1e1f20;
     }
   }
@@ -114,20 +110,19 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     --blue-dark:#aecbfa;
     --green:   #81c995;
     --red:     #f28b82;
+    --shadow-card:0 1px 3px rgba(0,0,0,.6),0 4px 8px rgba(0,0,0,.4);
     --shadow-1:0 1px 2px rgba(0,0,0,.6),0 1px 3px 1px rgba(0,0,0,.4);
-    --accent: #8ab4f8;
-    --success: #81c995;
-    --error: #f28b82;
     --input-bg: #1e1f20;
   }
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: Roboto, 'Segoe UI', system-ui, sans-serif;
+    font-family: 'Roboto', 'Segoe UI', system-ui, sans-serif;
     font-size: 14px;
     line-height: 1.5;
     min-height: 100vh;
   }
+  /* ── Top app bar ── */
   .g-header {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
@@ -136,7 +131,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     align-items: center;
     padding: 0 24px;
     gap: 14px;
-    box-shadow: 0 1px 3px rgba(60,64,67,.15);
+    box-shadow: 0 1px 4px rgba(60,64,67,.2), 0 2px 6px rgba(60,64,67,.1);
     position: sticky; top: 0; z-index: 10;
   }
   .g-header-logo { display:flex; align-items:center; gap:10px; }
@@ -147,16 +142,17 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     background:var(--blue-bg); color:var(--blue);
     font-size:11px; font-weight:500; padding:2px 8px; border-radius:12px; letter-spacing:.02em;
   }
+  /* ── Layout ── */
   .container {
     max-width: 640px;
     margin: 0 auto;
     padding: 28px 16px 64px;
   }
-  /* Cards */
+  /* ── Cards ── */
   .card {
     background: var(--surface);
     border-radius: 8px;
-    box-shadow: var(--shadow-1);
+    box-shadow: var(--shadow-card);
     margin-bottom: 16px;
     overflow: hidden;
   }
@@ -164,23 +160,40 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .card-title { font-size: 16px; font-weight: 500; margin-bottom: 4px; }
   .card-sub { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
   .card-bd { padding: 0 24px 24px; }
-  /* Form */
+  /* ── Form ── */
   .field { margin-bottom: 14px; }
   .field label {
     display: block; font-size: 11px; font-weight: 500; color: var(--muted);
     margin-bottom: 5px; text-transform: uppercase; letter-spacing: .08em;
   }
+  .field small {
+    display: block; font-size: 11px; color: var(--muted); margin-top: 4px;
+  }
   input[type="text"], input[type="number"], select {
     width: 100%; height: 40px; padding: 0 12px;
     background: var(--input-bg); border: 1px solid var(--border);
     border-radius: 4px; color: var(--text);
-    font-family: Roboto, sans-serif; font-size: 14px; outline: none;
+    font-family: 'Roboto', sans-serif; font-size: 14px; outline: none;
     transition: border-color .15s, box-shadow .15s; appearance: none;
   }
   input:focus, select:focus {
     border-color: var(--blue);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--blue) 20%, transparent);
   }
+  /* URL row with Copy button */
+  .url-row { display: flex; gap: 8px; align-items: flex-start; }
+  .url-row input { flex: 1; }
+  .url-row .btn-copy {
+    flex-shrink: 0; height: 40px; padding: 0 12px;
+    background: transparent; border: 1px solid var(--border);
+    border-radius: 4px; color: var(--muted); cursor: pointer;
+    font-family: 'Roboto', sans-serif; font-size: 13px; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 4px;
+    transition: background .15s, color .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  .url-row .btn-copy:hover { background: var(--blue-bg); color: var(--blue); border-color: var(--blue); }
+  .url-row .btn-copy.copied { color: var(--green); border-color: var(--green); background: color-mix(in srgb, var(--green) 10%, transparent); }
   .select-wrap { position: relative; }
   .select-wrap::after {
     content: ''; position: absolute; right: 12px; top: 50%;
@@ -193,7 +206,32 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     font-size: 11px; font-weight: 500; letter-spacing: .08em;
     text-transform: uppercase; color: var(--muted); margin-bottom: 12px;
   }
-  /* Toggle */
+  /* How it works collapsible */
+  .how-details {
+    margin-top: 6px; margin-bottom: 14px;
+    border: 1px solid var(--border); border-radius: 4px;
+    background: var(--surface2);
+  }
+  .how-details summary {
+    padding: 8px 12px; font-size: 12px; font-weight: 500;
+    color: var(--blue); cursor: pointer; user-select: none;
+    list-style: none; display: flex; align-items: center; gap: 6px;
+  }
+  .how-details summary::-webkit-details-marker { display: none; }
+  .how-details summary::before {
+    content: '▶'; font-size: 9px; transition: transform .2s; display: inline-block;
+  }
+  .how-details[open] summary::before { transform: rotate(90deg); }
+  .how-details .how-body {
+    padding: 0 12px 12px; font-size: 12px; color: var(--muted); line-height: 1.6;
+  }
+  .how-details .how-body ol { padding-left: 18px; margin-top: 4px; }
+  .how-details .how-body li { margin-bottom: 2px; }
+  .how-details .how-body code {
+    background: var(--border); border-radius: 3px; padding: 0 4px;
+    font-size: 11px; color: var(--text);
+  }
+  /* ── Toggle ── */
   .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
   .toggle-info { flex: 1; }
   .toggle-name { font-size: 14px; font-weight: 500; }
@@ -211,22 +249,29 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .toggle input:checked ~ .toggle-track { background: var(--blue); }
   .toggle input:checked ~ .toggle-thumb { transform: translateX(16px); }
-  /* Buttons */
+  /* ── Buttons ── */
   .btn {
     display: inline-flex; align-items: center; gap: 6px; height: 36px;
-    padding: 0 20px; border: none; border-radius: 4px;
-    font-family: Roboto, sans-serif; font-size: 14px; font-weight: 500;
-    cursor: pointer; letter-spacing: .01em; transition: box-shadow .15s, filter .15s;
-    text-decoration: none;
+    padding: 8px 24px; border: none; border-radius: 4px;
+    font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 500;
+    cursor: pointer; letter-spacing: .25px; transition: box-shadow .15s, filter .15s;
+    text-decoration: none; position: relative; overflow: hidden;
   }
-  .btn-blue { background: var(--blue); color: #fff; }
+  .btn-blue { background: #1a73e8; color: #fff; }
+  .btn-blue::after {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at center, rgba(255,255,255,.35) 0%, transparent 65%);
+    transform: scale(0); opacity: 0; border-radius: inherit;
+    transition: transform .45s ease, opacity .45s ease;
+  }
+  .btn-blue:active::after { transform: scale(3); opacity: 1; transition: none; }
   .btn-blue:hover { filter: brightness(1.08); box-shadow: var(--shadow-1); }
   .btn-blue:disabled { opacity: .55; cursor: not-allowed; }
   .btn-outline { background: transparent; color: var(--blue); border: 1px solid var(--border); }
   .btn-outline:hover { background: var(--blue-bg); }
   .btn-green { background: var(--green); color: #fff; }
   .btn-green:hover { filter: brightness(1.08); }
-  /* Progress */
+  /* ── Progress card ── */
   .progress-hd {
     padding: 14px 24px; display: flex; align-items: center; gap: 12px;
     border-bottom: 1px solid var(--border);
@@ -237,17 +282,17 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     animation: spin .8s linear infinite; flex-shrink: 0;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .progress-status { font-size: 13px; color: var(--muted); flex: 1; }
-  .progress-status b { color: var(--text); font-weight: 500; }
+  .progress-status { font-size: 13px; color: var(--muted); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #progress-log {
     font-family: 'Roboto Mono', 'Fira Code', monospace; font-size: 12px;
     line-height: 1.8; color: var(--muted); padding: 12px 24px;
-    height: 190px; overflow-y: auto; background: var(--surface2);
+    height: 190px; overflow-y: auto; overflow-x: hidden; background: var(--surface2);
+    word-break: break-all;
   }
   #progress-log .line-ok   { color: var(--green); }
   #progress-log .line-err  { color: var(--red); }
   #progress-log .line-info { color: var(--blue); }
-  /* Stats pills */
+  /* ── Stats pills ── */
   .stat-row { display: flex; gap: 8px; flex-wrap: wrap; padding: 14px 24px 0; }
   .stat-pill {
     display: flex; align-items: center; gap: 5px;
@@ -255,21 +300,60 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     border-radius: 16px; padding: 3px 10px; font-size: 12px; color: var(--muted);
   }
   .stat-pill .val { color: var(--text); font-weight: 500; font-variant-numeric: tabular-nums; }
-  /* Results */
+  /* ── Skeleton loader ── */
+  @keyframes skel-pulse {
+    0%,100% { opacity: 1; } 50% { opacity: .45; }
+  }
+  .skel-card { padding: 20px 24px 24px; }
+  .skel-line {
+    height: 12px; border-radius: 6px; background: var(--border);
+    margin-bottom: 10px; animation: skel-pulse 1.4s ease-in-out infinite;
+  }
+  /* ── Results ── */
   .result-actions {
     display: flex; gap: 8px; flex-wrap: wrap;
     padding: 14px 24px; border-bottom: 1px solid var(--border);
+    align-items: center;
   }
-  #dashboard-frame { width: 100%; height: 660px; border: none; display: block; }
+  .dashboard-wrap { position: relative; }
+  #dashboard-frame { width: 100%; min-height: 600px; height: 660px; border: none; display: block; }
+  .dash-open-link {
+    position: absolute; top: 10px; right: 14px;
+    font-size: 12px; color: var(--blue); text-decoration: none; font-weight: 500;
+    background: var(--surface); padding: 4px 10px; border-radius: 12px;
+    border: 1px solid var(--border); box-shadow: var(--shadow-1);
+    display: flex; align-items: center; gap: 4px;
+    transition: background .15s;
+  }
+  .dash-open-link:hover { background: var(--blue-bg); }
+  /* No reviews notice */
+  .no-reviews-notice {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 24px; background: var(--blue-bg);
+    border-top: 1px solid color-mix(in srgb, var(--blue) 20%, transparent);
+    font-size: 13px; color: var(--blue);
+  }
   #results { display: none; }
   #progress-card { display: none; }
+  #skeleton-card { display: none; }
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .form-row { grid-template-columns: 1fr; }
+    .url-row { flex-wrap: wrap; }
+    .url-row input { min-width: 0; }
+    .container { padding: 16px 12px 48px; }
+    .card-hd, .card-bd { padding-left: 16px; padding-right: 16px; }
+    .divider { margin-left: -16px; margin-right: -16px; }
+    #progress-log { padding-left: 16px; padding-right: 16px; }
+    .stat-row, .progress-hd, .result-actions { padding-left: 16px; padding-right: 16px; }
+  }
 </style>
 </head>
 <body>
-<!-- Header -->
+<!-- Top app bar -->
 <div class="g-header">
   <div class="g-header-logo">
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#ea4335"/>
       <circle cx="12" cy="9" r="2.5" fill="white"/>
     </svg>
@@ -279,7 +363,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 </div>
 
 <div class="container">
-  <!-- Form -->
+  <!-- Form card -->
   <div class="card">
     <div class="card-hd">
       <div class="card-title">Scrape reviews</div>
@@ -289,7 +373,27 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       <form id="scrape-form" onsubmit="startScrape(event)">
         <div class="field">
           <label for="url">Google Maps URL</label>
-          <input type="text" id="url" name="url" placeholder="https://www.google.com/maps/place/..." required>
+          <div class="url-row">
+            <input type="text" id="url" name="url"
+              placeholder="https://www.google.com/maps/place/..." required>
+            <button type="button" class="btn-copy" id="copy-btn" onclick="copyUrl()" title="Copy URL to clipboard">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+              </svg>
+              Copy
+            </button>
+          </div>
+          <details class="how-details">
+            <summary>How to get the right URL</summary>
+            <div class="how-body">
+              <ol>
+                <li>Open <a href="https://maps.google.com" target="_blank" rel="noopener" style="color:var(--blue)">Google Maps</a> and search for the place.</li>
+                <li>Click the place name to open its detail panel.</li>
+                <li>Copy the full URL from your browser's address bar — it should contain <code>/place/</code>.</li>
+                <li>Paste it above and press <strong>Start scraping</strong>.</li>
+              </ol>
+            </div>
+          </details>
         </div>
         <hr class="divider">
         <div class="section-lbl">Review options</div>
@@ -328,6 +432,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           <div class="field">
             <label for="since">Stop before (YYYY-MM)</label>
             <input type="text" id="since" name="since" placeholder="e.g. 2024-01">
+            <small>Stops at reviews older than this month</small>
           </div>
         </div>
         <hr class="divider">
@@ -345,7 +450,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         </div>
         <div style="margin-top:20px">
           <button type="submit" class="btn btn-blue" id="start-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
             Start scraping
           </button>
         </div>
@@ -353,7 +458,18 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- Progress -->
+  <!-- Skeleton loader (shown immediately after submit, before first SSE message) -->
+  <div class="card" id="skeleton-card" aria-live="polite" aria-label="Loading">
+    <div class="skel-card">
+      <div class="skel-line" style="width:45%;height:14px;margin-bottom:16px"></div>
+      <div class="skel-line" style="width:80%"></div>
+      <div class="skel-line" style="width:65%"></div>
+      <div class="skel-line" style="width:72%"></div>
+      <div class="skel-line" style="width:55%"></div>
+    </div>
+  </div>
+
+  <!-- Progress card -->
   <div class="card" id="progress-card">
     <div class="card-hd">
       <div class="card-title" id="progress-place">Scraping…</div>
@@ -367,23 +483,33 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       <div class="spinner" id="spinner"></div>
       <div class="progress-status"><span id="status-text">Starting…</span></div>
     </div>
-    <div id="progress-log"></div>
+    <div id="progress-log" aria-live="polite" aria-label="Progress log"></div>
   </div>
 
-  <!-- Results -->
+  <!-- Results card -->
   <div class="card" id="results">
     <div class="card-hd">
       <div class="card-title" id="result-title">Done</div>
       <div class="card-sub" id="result-sub"></div>
     </div>
+    <div id="no-reviews-notice" class="no-reviews-notice" style="display:none">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+      All reviews are already saved — no new reviews found this run.
+    </div>
     <div class="result-actions">
       <a id="csv-link" class="btn btn-green" href="#" download>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
         Download CSV
       </a>
       <button class="btn btn-outline" onclick="resetForm()">↩ New scrape</button>
     </div>
-    <iframe id="dashboard-frame" src="about:blank" title="Dashboard"></iframe>
+    <div class="dashboard-wrap">
+      <iframe id="dashboard-frame" src="about:blank" title="Reviews Dashboard"></iframe>
+      <a id="dash-open-link" class="dash-open-link" href="#" target="_blank" rel="noopener" style="display:none">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+        Open in new tab
+      </a>
+    </div>
   </div>
 </div>
 
@@ -399,17 +525,29 @@ function log(msg, cls) {
   box.scrollTop = box.scrollHeight;
 }
 
-function setStatus(state, text) {
-  const dot = document.getElementById('status-dot');
-  dot.className = 'status-dot ' + state;
-  document.getElementById('status-text').textContent = text;
+function copyUrl() {
+  const val = document.getElementById('url').value.trim();
+  if (!val) return;
+  const btn = document.getElementById('copy-btn');
+  navigator.clipboard.writeText(val).then(function() {
+    btn.classList.add('copied');
+    btn.querySelector('span,svg').nextSibling || null;
+    const origText = btn.textContent.trim();
+    btn.lastChild.textContent = ' Copied!';
+    setTimeout(function() {
+      btn.classList.remove('copied');
+      btn.lastChild.textContent = ' Copy';
+    }, 1800);
+  }).catch(function() {
+    /* fallback: select the field */
+    document.getElementById('url').select();
+  });
 }
 
 function startScrape(e) {
   e.preventDefault();
   if (es) { es.close(); es = null; }
 
-  const form = document.getElementById('scrape-form');
   const btn  = document.getElementById('start-btn');
   const url       = document.getElementById('url').value.trim();
   const sort      = document.getElementById('sort').value;
@@ -422,36 +560,50 @@ function startScrape(e) {
 
   if (!url) { alert('Please enter a Google Maps URL'); return; }
 
-  // Reset UI
+  /* Reset UI — show skeleton immediately, hide progress until first event */
   document.getElementById('progress-log').innerHTML = '';
   document.getElementById('results').style.display = 'none';
-  document.getElementById('progress-card').style.display = 'block';
+  document.getElementById('progress-card').style.display = 'none';
+  document.getElementById('skeleton-card').style.display = 'block';
   document.getElementById('progress-place').textContent = 'Scraping…';
   document.getElementById('stat-found').textContent = '0';
   document.getElementById('stat-new').textContent = '0';
   document.getElementById('stat-pages').textContent = '0';
   document.getElementById('spinner').style.display = '';
+  document.getElementById('no-reviews-notice').style.display = 'none';
   btn.disabled = true;
 
-  const params = new URLSearchParams({ url, sort, limit, language, headless, min_rating: minRating, max_rating: maxRating });
+  const params = new URLSearchParams({
+    url, sort, limit, language, headless,
+    min_rating: minRating, max_rating: maxRating
+  });
   if (since) params.set('since', since);
   es = new EventSource('/scrape?' + params.toString());
 
-  let totalFound = 0, totalNew = 0, pages = 0;
+  let totalFound = 0, totalNew = 0, pages = 0, firstMessage = true;
 
   es.onmessage = function(event) {
     try {
       const data = JSON.parse(event.data);
+
+      /* Swap skeleton for real progress card on first message */
+      if (firstMessage) {
+        firstMessage = false;
+        document.getElementById('skeleton-card').style.display = 'none';
+        document.getElementById('progress-card').style.display = 'block';
+      }
+
       if (data.type === 'progress') {
-        const cls = data.level === 'error' ? 'line-err' : data.level === 'info' ? 'line-info' : 'line-ok';
+        const cls = data.level === 'error' ? 'line-err'
+                  : data.level === 'info'  ? 'line-info' : 'line-ok';
         log(data.msg, cls);
         document.getElementById('status-text').textContent = data.msg;
-        // parse "Page N | +X new | Y total" to update pills
+        /* parse "Page N | +X new | Y total" to update pills */
         const m = data.msg.match(/Page\s+(\d+)\s*\|\s*\+(\d+) new\s*\|\s*([\d,]+) total/);
         if (m) {
           pages = parseInt(m[1]);
           totalNew += parseInt(m[2]);
-          totalFound = parseInt(m[3].replace(/,/g,''));
+          totalFound = parseInt(m[3].replace(/,/g, ''));
           document.getElementById('stat-found').textContent = totalFound.toLocaleString();
           document.getElementById('stat-new').textContent = totalNew.toLocaleString();
           document.getElementById('stat-pages').textContent = pages;
@@ -459,13 +611,16 @@ function startScrape(e) {
       } else if (data.type === 'done') {
         es.close(); es = null;
         btn.disabled = false;
+        document.getElementById('skeleton-card').style.display = 'none';
         document.getElementById('spinner').style.display = 'none';
-        document.getElementById('status-text').textContent = 'Done — ' + totalFound.toLocaleString() + ' reviews';
+        document.getElementById('status-text').textContent =
+          'Done — ' + totalFound.toLocaleString() + ' reviews';
         log('✓ Complete', 'line-ok');
         showResults(data, totalFound, totalNew, pages);
       } else if (data.type === 'error') {
         es.close(); es = null;
         btn.disabled = false;
+        document.getElementById('skeleton-card').style.display = 'none';
         document.getElementById('spinner').style.display = 'none';
         document.getElementById('status-text').textContent = 'Error: ' + data.msg;
         log('✗ ' + data.msg, 'line-err');
@@ -479,6 +634,7 @@ function startScrape(e) {
     if (es && es.readyState === EventSource.CLOSED) return;
     if (es) { es.close(); es = null; }
     btn.disabled = false;
+    document.getElementById('skeleton-card').style.display = 'none';
     document.getElementById('spinner').style.display = 'none';
     document.getElementById('status-text').textContent = 'Connection lost';
     log('✗ Connection to server lost', 'line-err');
@@ -488,23 +644,39 @@ function startScrape(e) {
 function showResults(data, total, newCount, pages) {
   const results = document.getElementById('results');
   results.style.display = 'block';
-  document.getElementById('result-title').textContent = 'Done';
-  document.getElementById('result-sub').textContent =
-    total.toLocaleString() + ' reviews · ' + newCount.toLocaleString() + ' new · ' + pages + ' pages';
+
+  if (newCount === 0) {
+    document.getElementById('result-title').textContent = 'Up to date';
+    document.getElementById('result-sub').textContent =
+      total.toLocaleString() + ' reviews already saved · ' + pages + ' pages scanned';
+    document.getElementById('no-reviews-notice').style.display = 'flex';
+  } else {
+    document.getElementById('result-title').textContent = 'Done';
+    document.getElementById('result-sub').textContent =
+      total.toLocaleString() + ' reviews · '
+      + newCount.toLocaleString() + ' new · ' + pages + ' pages';
+    document.getElementById('no-reviews-notice').style.display = 'none';
+  }
 
   const csvLink = document.getElementById('csv-link');
   csvLink.href = '/download?path=' + encodeURIComponent(data.csv_path);
   csvLink.download = data.csv_path.split('/').pop() || 'reviews.csv';
 
   if (data.dashboard_b64) {
-    document.getElementById('dashboard-frame').src = 'data:text/html;base64,' + data.dashboard_b64;
+    const src = 'data:text/html;base64,' + data.dashboard_b64;
+    document.getElementById('dashboard-frame').src = src;
+    const openLink = document.getElementById('dash-open-link');
+    openLink.href = src;
+    openLink.style.display = 'flex';
   }
+
   results.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function resetForm() {
   document.getElementById('results').style.display = 'none';
   document.getElementById('progress-card').style.display = 'none';
+  document.getElementById('skeleton-card').style.display = 'none';
   document.getElementById('url').focus();
 }
 </script>
